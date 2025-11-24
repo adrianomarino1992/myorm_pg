@@ -376,7 +376,7 @@ await context.Persons.DeleteAsync(person);
                                 Field : 'Age',                                                 
                                 Value : 20
                                 })
-                      .DeleteSelectionAsync();
+                      .UpdateSelectionAsync();
 ```
 
 
