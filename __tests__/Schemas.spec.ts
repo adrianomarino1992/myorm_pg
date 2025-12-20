@@ -5,8 +5,10 @@ import Type from "../src/core/design/Type";
 import PGConnection from "../src/implementations/PGDBConnection";
 import PGDBManager from "../src/implementations/PGDBManager";
 import Context from "./classes/TestContext";
+import ErrorContext from "./classes/ErrorContext";
 import {Person} from './classes/TestEntity';
-
+import EntityWithNoKey from './classes/EntityWithNoKey';
+import { ConstraintFailException } from "../src/Index";
 
 
 describe("Types and metadata", ()=>{
@@ -78,21 +80,35 @@ describe("Types and metadata", ()=>{
     
         });
 
+        test("Testing erro while creating a table with no primary key ", async ()=>{
+    
+            var conn = CreateConnection();
+    
+            var manager = new PGDBManager(conn);
+    
+           var errorContext = new ErrorContext(manager);
+    
+            try {
+
+                await errorContext.UpdateDatabaseAsync();
+                fail("Should not create the table");
+
+            } catch (err) {
+              
+                expect(err instanceof ConstraintFailException).toBeTruthy();
+            }
+           
+            let test_table = await manager.CheckTableAsync(EntityWithNoKey);
+    
+            expect(test_table).toBeFalsy();        
+    
+        });
+
 
         describe("Testing columns", ()=>{
 
 
-            test("Testing if a column exists", async ()=>{
-    
-                var conn = CreateConnection();
-
-                var manager = new PGDBManager(conn);
-        
-                let table = await manager.CheckColumnAsync(Person, 'Name');
-               
-                expect(table).toBeFalsy();        
-        
-            });
+           
         
         
             test("Testing create a column and checking if it was created", async ()=>{

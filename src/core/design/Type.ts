@@ -82,7 +82,7 @@ export default class Type
 
     public static GetTableName(cTor : Function) : string 
     {
-        return SchemasDecorators.GetTableAttribute(cTor) ?? cTor.name;
+        return SchemasDecorators.GetTableAttribute(cTor) ?? cTor.name.toLowerCase();
     }
 
     public static GetColumnName(cTor : Function, key : string) : string 

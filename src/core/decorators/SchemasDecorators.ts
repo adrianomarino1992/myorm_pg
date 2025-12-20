@@ -52,17 +52,21 @@ export default class SchemasDecorators
     {
         return function (target : Object)
         {
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._tableAttribute, undefined, name ?? (target as Function).name.toLocaleLowerCase());
-            Reflect.defineMetadata(SchemasDecorators._tableAttribute, name ?? (target as Function).name.toLocaleLowerCase(), target);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._tableAttribute, undefined, name ?? (constructor as Function).name.toLowerCase());
+            Reflect.defineMetadata(SchemasDecorators._tableAttribute, name ?? (constructor as Function).name.toLowerCase(), constructor);
         }
     }
 
     public static GetTableAttribute(target : Object) : string | undefined
     {
-        let meta = Reflect.getMetadata(SchemasDecorators._tableAttribute, target);
+        const constructor = typeof target == "function" ? target : target.constructor;
+
+        let meta = Reflect.getMetadata(SchemasDecorators._tableAttribute, constructor);
 
         if(!meta)
-            meta = OwnMetaDataContainer.Get(target.constructor, SchemasDecorators._tableAttribute, undefined)?.Value;
+            meta = OwnMetaDataContainer.Get(constructor, SchemasDecorators._tableAttribute, undefined)?.Value;
         
         return meta;
     }
@@ -72,9 +76,11 @@ export default class SchemasDecorators
     {
         return function (target : Object, propertyName : string)
         {
-            SchemasDecorators.DefinePropertyAsDecorated(target.constructor, propertyName.toString());
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._columnAttribute, propertyName, name ?? propertyName.toLocaleLowerCase());
-            Reflect.defineMetadata(SchemasDecorators._columnAttribute, name ?? propertyName.toLocaleLowerCase(), target.constructor, propertyName);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            SchemasDecorators.DefinePropertyAsDecorated(constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._columnAttribute, propertyName, name ?? propertyName.toLowerCase());
+            Reflect.defineMetadata(SchemasDecorators._columnAttribute, name ?? propertyName.toLowerCase(), constructor, propertyName);
         }
     }    
 
@@ -92,14 +98,16 @@ export default class SchemasDecorators
     {
         return function (target : Object, propertyName : string)
         {
-            SchemasDecorators.DefinePropertyAsDecorated(target.constructor, propertyName.toString());
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._notNullAttribute, propertyName, true);
-            Reflect.defineMetadata(SchemasDecorators._notNullAttribute, true, target.constructor, propertyName);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            SchemasDecorators.DefinePropertyAsDecorated(constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._notNullAttribute, propertyName, true);
+            Reflect.defineMetadata(SchemasDecorators._notNullAttribute, true, constructor, propertyName);
         }
     }    
 
     public static AllowNullValue(cTor : Function, propertyName : string) : boolean
-    {
+    {        
         let meta =  Reflect.getMetadata(SchemasDecorators._notNullAttribute, cTor, propertyName);
 
         if(meta == undefined)
@@ -133,14 +141,17 @@ export default class SchemasDecorators
     {
         return function (target : Object, propertyName : string)
         {
-            SchemasDecorators.DefinePropertyAsDecorated(target.constructor, propertyName.toString());
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._relationAttribute, propertyName,  { TypeBuilder : lazyBuilder, Relation : relation, Field : property });
-            Reflect.defineMetadata(SchemasDecorators._relationAttribute, { TypeBuilder : lazyBuilder, Relation : relation, Field : property }, target.constructor, propertyName);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            SchemasDecorators.DefinePropertyAsDecorated(constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._relationAttribute, propertyName,  { TypeBuilder : lazyBuilder, Relation : relation, Field : property });
+            Reflect.defineMetadata(SchemasDecorators._relationAttribute, { TypeBuilder : lazyBuilder, Relation : relation, Field : property }, constructor, propertyName);
         }
     }
 
     public static GetRelationAttribute(cTor : Function, propertyName : string) : { TypeBuilder :() => {new (...args: any[]) : unknown}, Relation : RelationType, Field? : string } | undefined
     {
+
         let meta = Reflect.getMetadata(SchemasDecorators._relationAttribute, cTor, propertyName) as { TypeBuilder : () => {new (...args: any[]) : unknown}, Relation  : RelationType, Field? : string };
         
         if(!meta)
@@ -155,14 +166,17 @@ export default class SchemasDecorators
     {
         return function (target : Object, propertyName : string)
         {
-            SchemasDecorators.DefinePropertyAsDecorated(target.constructor, propertyName.toString());
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._primaryKeyAttribute, propertyName,  true);
-            Reflect.defineMetadata(SchemasDecorators._primaryKeyAttribute, true , target.constructor, propertyName);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            SchemasDecorators.DefinePropertyAsDecorated(constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._primaryKeyAttribute, propertyName,  true);
+            Reflect.defineMetadata(SchemasDecorators._primaryKeyAttribute, true , constructor, propertyName);
         }
     }
 
     public static IsPrimaryKey(cTor : Function, propertyName : string) : boolean 
     {
+        
         let meta =  Reflect.getMetadata(SchemasDecorators._primaryKeyAttribute, cTor, propertyName);
 
         if(!meta)
@@ -193,14 +207,17 @@ export default class SchemasDecorators
 
         return function (target : Object, propertyName : string)
         {
-            SchemasDecorators.DefinePropertyAsDecorated(target.constructor, propertyName.toString());
-            OwnMetaDataContainer.Set(target.constructor, SchemasDecorators._dataTypeAttribute, propertyName,  type);
-            Reflect.defineMetadata(SchemasDecorators._dataTypeAttribute, type, target.constructor, propertyName);
+            const constructor = typeof target == "function" ? target : target.constructor;
+
+            SchemasDecorators.DefinePropertyAsDecorated(constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(constructor, SchemasDecorators._dataTypeAttribute, propertyName,  type);
+            Reflect.defineMetadata(SchemasDecorators._dataTypeAttribute, type, constructor, propertyName);
         }
     }   
 
     public static GetDataTypeAttribute(cTor : Function, propertyName : string) : DBTypes | undefined
     {
+
         let value = Reflect.getMetadata(SchemasDecorators._dataTypeAttribute, cTor, propertyName);
 
         if(!value)

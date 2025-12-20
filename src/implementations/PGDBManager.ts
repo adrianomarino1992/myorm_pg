@@ -7,7 +7,7 @@ import Type from '../core/design/Type';
 import PGDBConnection from './PGDBConnection';
 import SchemasDecorators from '../core/decorators/SchemasDecorators';
 import InvalidOperationException from '../core/exceptions/InvalidOperationException';
-import { DBTypes } from '../Index';
+import { ConstraintFailException, DBTypes } from '../Index';
 import { RelationType } from '../core/enums/RelationType';
 import {DBOperationLogHandler, LogType} from 'myorm_core'; 
 
@@ -276,12 +276,25 @@ export default class PGDBManager extends AbstractManager
             if(table_name == undefined)
                 throw new TypeNotSuportedException(`The type ${cTor.name} is not supported. Can not determine the table name of type`);
 
+            let columns = Type.GetProperties(cTor);
+
+            let hasPrimaryKey = false;
+
+            for(let col of columns)
+            {
+                hasPrimaryKey = SchemasDecorators.IsPrimaryKey(cTor, col);
+                if(hasPrimaryKey)
+                    break;
+            }
+
+            if(!hasPrimaryKey)
+                throw new ConstraintFailException(`The type ${cTor.name} has not a primary key column`);
+
             await this._connection.OpenAsync();
 
             if(!await this.CheckTableAsync(cTor))
                 await this.CreateTableAsync(cTor);
-
-            let columns = Type.GetProperties(cTor);
+          
             
             for(let column of columns)
             {

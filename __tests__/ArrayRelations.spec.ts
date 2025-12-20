@@ -214,4 +214,59 @@ describe("Context", ()=>{
 
     },100000);
 
+
+    
+    test("Testing search by empty arrays", async ()=>{
+       
+        var context = CreateContext();
+
+        await context.Messages.AddAsync(new Message("With elements", 
+            new Person("Adriano", "adriano@test.com"), 
+            [
+                new Person("Camila", "camila@test.com"), 
+                new Person("Juliana", "juliana@test.com"), 
+                new Person("Andre", "andre@test.com")
+
+            ]
+            ));
+
+             await context.Messages.AddAsync(new Message("Empty array", 
+            new Person("Adriano", "adriano@test.com"), 
+            [
+            
+            ]
+            ));
+
+
+              await context.Messages.AddAsync(new Message("undefined", 
+            new Person("Adriano", "adriano@test.com"), 
+           undefined
+            ));
+
+
+            let undef = await context.Messages.Where({
+                Field: 'To', 
+                Value : undefined
+            }).ToListAsync();
+
+
+            expect(undef.length).toBe(1);
+            expect(undef[0]).not.toBeUndefined();
+            expect(undef[0].Message).toBe("undefined");
+
+
+
+            let empty = await context.Messages.Where({
+                Field: 'To', 
+                Value : []
+            }).ToListAsync();
+
+
+            expect(empty.length).toBe(1);
+            expect(empty[0]).not.toBeUndefined();
+            expect(empty[0].Message).toBe("Empty array");
+       
+
+    },100000);
+
 });

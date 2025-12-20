@@ -1,31 +1,288 @@
 # myorm_pg
 
-myorm_pg is a ORM writen with TypeScript with sintax similar with MyORMForPostgreSQL of .NET
+**myorm_pg** is a lightweight ORM written in **TypeScript** for **PostgreSQL**, inspired by the syntax and development experience of **MyORMForPostgreSQL (.NET)**.
+
+It focuses on:
+- Strongly typed entities
+- Decorator-based mapping
+- Fluent and expressive queries
+- Automatic relationship handling
+- Simple database lifecycle management
+
+---
 
 ## Installation
-
-
 
 ```bash
 npm install myorm_pg
 ```
-Enable decorators on tsconfig.json
+
+---
+
+## TypeScript Configuration
+
+Decorators must be enabled in your `tsconfig.json`:
+
 ```json
-"experimentalDecorators": true,                   
-"emitDecoratorMetadata": true,
+{
+  "experimentalDecorators": true,
+  "emitDecoratorMetadata": true
+}
+```
+---
+
+
+
+# Entities
+
+Entities represent database tables and are defined using TypeScript classes combined with decorators.
+Decorators are responsible for mapping classes, properties, and relationships directly to PostgreSQL structures.
+
+## Decorator Overview
+
+### @Table
+Defines the database table name associated with the entity.
+
+### @Column
+Marks a class property as a table column.
+An optional parameter allows you to specify a custom column name.
+
+### @PrimaryKey
+Indicates that the column is the primary key of the table.
+
+### @DataType
+Explicitly defines the PostgreSQL data type for the column using DBTypes.
+
+## Relationship decorators
+Define how entities relate to each other and how foreign keys and junction tables are generated:
+
+
+
+### @OneToMany
+- Defines a one-to-many relationship. One entity instance is related to many instances of another entity
+
+- Does NOT create a foreign key by itself
+
+- Must always be paired with a corresponding **@ManyToOne** on the other side
+
+- The foreign key is created on the many side
+#### Example
+
+```typescript
+// Person.ts
+@OneToMany(() => Message, "From")
+public MessagesWriten?: Message[];
+```
+```typescript
+// Message.ts
+@ManyToOne(() => Person, "MessagesWriten")
+public From?: Person;
 ```
 
 
-# Usage
-This ORM is based on https://www.nuget.org/packages/Adr.MyORMForPostgreSQL for .NET. The usage is similar.
+
+### @ManyToOne
+- Defines the owning side of a one-to-many relationship.
+
+- Many records point to one record
+
+- This is the side responsible for persisting the relationship
+
+#### Example
+
+```typescript
+// Message.ts
+@ManyToOne(() => Person, "MessagesWriten")
+public From?: Person;
+```
 
 
-### Context.ts
+### @ManyToMany
+
+- Defines a many-to-many relationship.
+
+- Many records relate to many records
+
+- You do not need to define the junction entity manually
+
+#### Example:
+
+```typescript
+// Person.ts
+@ManyToMany(() => Message, "To")
+public MessagesReceived?: Message[];
+```
+```typescript
+// Message.ts
+@ManyToMany(() => Person, "MessagesReceived")
+public To?: Person[];
+```
+
+### @OneToOne
+
+- Defines a one-to-one relationship.
+
+- One record is associated with exactly one record
+
+
+
+#### Example:
+
+```typescript
+// Person.ts
+@OneToOne(() => Profile, "Person")
+public Profile?: Profile;
+```
+```typescript
+// Profile.ts
+@OneToOne(() => Person, "Profile")
+public Person?: Person;
+```
+
+
+
+## Example of entities
+
+
+### Person.ts
+
+```typescript
+import { Table, Column, PrimaryKey, DataType, OneToMany, OneToOne, ManyToMany, DBTypes} from 'myorm_pg';
+import { Message } from './Message';
+
+@Table("person_tb")
+export class Person
+{
+    // Primary key with SERIAL (auto-increment)
+    @PrimaryKey()
+    @Column()
+    @DataType(DBTypes.SERIAL)
+    public Id!: number;
+
+    // Simple text column
+    @Column()
+    public Name!: string;
+
+    // Column with custom database name
+    @Column("email_address")
+    public Email!: string;
+
+    // Numeric column
+    @Column()
+    public Age!: number;
+
+    // Explicit integer column
+    @Column()
+    @DataType(DBTypes.INTEGER)
+    public CEP!: number;
+
+    // PostgreSQL TEXT[]
+    @Column()
+    @DataType(DBTypes.TEXTARRAY)
+    public PhoneNumbers!: string[];
+
+    // PostgreSQL INTEGER[]
+    @Column()
+    @DataType(DBTypes.INTEGERARRAY)
+    public Documents!: number[];
+
+    // PostgreSQL DATE
+    @Column()
+    @DataType(DBTypes.DATE)
+    public Birth!: Date;
+
+    // One person can write many messages
+    @Column()
+    @OneToMany(() => Message, "From")
+    public MessagesWriten?: Message[];
+
+    // Many persons can receive many messages
+    @Column()
+    @ManyToMany(() => Message, "To")
+    public MessagesReceived?: Message[];
+
+  
+    constructor(name : string = "", email : string = "", age : number = 1)
+    {
+        this.Id = -1;
+        this.Name = name;
+        this.Email = email;
+        this.Age = age;
+        this.CEP = -1;
+        this.PhoneNumbers = [];
+        this.Birth = new Date(1992,4,23);       
+        this.Documents = []; 
+        this.MessagesReceived = [];
+        this.MessagesWriten = [];
+       
+    }
+       
+
+}
+```
+
+### Message.ts
+
+```typescript
+import { Table, Column, PrimaryKey, DataType, ManyToOne, ManyToMany, DBTypes} from 'myorm_pg';
+import { Person } from './Person';
+
+@Table("message_tb")
+export class Message
+{
+    // Primary key with SERIAL (auto-increment)
+    @PrimaryKey()
+    @Column()
+    @DataType(DBTypes.SERIAL)
+    public Id : number = -1;
+
+    // Text column
+    @Column()
+    public Message : string;
+
+    // One person can write many messages
+    @Column()
+    @ManyToOne(()=> Person, "MessagesWriten")
+    public From? : Person;
+
+    // Many persons can receive many messages
+    @Column()  
+    @ManyToMany(()=> Person, "MessagesReceived")  
+    public To? : Person[];     
+
+
+    constructor(message : string, from? : Person, to? : Person[])
+    {
+        this.Message = message;
+        this.From = from;
+        this.To = to;       
+    }
+       
+
+}
+```
+
+--- 
+
+# Database Context
+
+The database context is the central access point to the database.
+It manages:
+
+- The database connection
+
+- Entity sets (PGDBSet<T>)
+
+- Schema synchronization
+
+- Query execution
+
+Each entity must be registered in the context to be tracked and queried by the ORM.
 
 ```typescript
 import { PGDBManager, PGDBContext, PGDBSet} from 'myorm_pg';
-import { Message } from './entities/Message'; 
-import { Person } from './entities/Person';
+import { Message } from './Message'; 
+import { Person } from './Person';
 
 
 export default class Context extends PGDBContext
@@ -43,14 +300,10 @@ export default class Context extends PGDBContext
 ```
 
 # Create a instance of context and update or creare database
-### Create with explicts parameters
+
  
 ```typescript
-
-var context = new Context(PGDBManager.Build("localhost", 5432, "test_db", "username", "password"));
-
-await context.UpdateDatabaseAsync();
-
+const context = new Context(PGDBManager.Build("localhost", 5432, "test_db", "username", "password"));
 ```
 
 ### Create with enviroment variables 
@@ -60,21 +313,42 @@ this method will try get values from __process.env__ keys. The ORM will search f
  
  
 ```typescript
+const  context = new Context(PGDBManager.BuildFromEnviroment());
+```
 
-var context = new Context(PGDBManager.BuildFromEnviroment());
+After creating the context, the database schema can be created or updated automatically based on the entity metadata. 
+
+```typescript
+await context.UpdateDatabaseAsync();
+```
+
+This process:
+
+- Creates tables if they do not exist
+
+- Updates columns and data types
+
+- Creates foreign keys and junction tables
+
+- Keeps the database schema synchronized with the code
+### Create with explicts parameters
+ 
+```typescript
+
+var context = new Context(PGDBManager.Build("localhost", 5432, "test_db", "username", "password"));
 
 await context.UpdateDatabaseAsync();
 
-
 ```
+--- 
 
 
 
-## Insert entities
+# Insert entities
 
 ```typescript
 
-let person = new Person();
+const person = new Person();
 person.Name = "Adriano";
 person.Email = "adriano@test.com";
 person.Birth = new Date(1970,01,01);
@@ -84,9 +358,9 @@ person.PhoneNumbers = ['+55(55)1234-5678'];
 await context.Persons.AddAsync(person);
 
 ```
+---
 
-
-## Insert entities with relation
+# Insert entities with relation
 In this case, all persons will be saved automatically. All persons of __Message.To__ property will have a reference to this message on property 
 __Person.MessagesReceived__ and the person of __Message.From__ will have a reference to this message on __Person.MessagesWriten__ property
 
@@ -103,7 +377,10 @@ await context.Messages.AddAsync(msg);
 
 ```
 
-# where
+---
+# Query
+
+## where
 
 
 ```typescript
@@ -116,7 +393,7 @@ let persons = await context.Persons.Where({
 
 ```
 
-# And
+## And
 
 
 ```typescript
@@ -134,7 +411,7 @@ let persons = await context.Persons.Where({
 ```
 
 
-# Or
+## Or
 
 
 ```typescript
@@ -151,10 +428,11 @@ let persons = await context.Persons.Where({
 
 ```
 
+---
 
 # Operations
 
-### Equals
+## Equals
 
 ```typescript
 
@@ -167,7 +445,7 @@ let persons = await context.Persons.Where({
 ```
 
 
-### Not equals
+## Not equals
 
 ```typescript
 
@@ -180,7 +458,7 @@ let persons = await context.Persons.Where({
 
 ```
 
-### Contains
+## Contains
 
 ```typescript
 
@@ -193,7 +471,7 @@ let persons = await context.Persons.Where({
 ```
 
 
-### Starts with
+## Starts with
 
 ```typescript
 
@@ -206,7 +484,7 @@ let persons = await context.Persons.Where({
 ```
 
 
-### Ends with
+## Ends with
 
 ```typescript
 
@@ -218,7 +496,7 @@ let persons = await context.Persons.Where({
                                    .ToListAsync();
 ```
 
-### Greater 
+## Greater 
 
 ```typescript
 
@@ -230,7 +508,7 @@ let persons = await context.Persons.Where({
                                    .ToListAsync();
 ```
 
-### Smaller
+## Smaller
 
 ```typescript
 
@@ -242,9 +520,9 @@ let persons = await context.Persons.Where({
                                    .ToListAsync();
 
 ```
+--- 
+# Load related entities
 
-# Load
-We can load all related entities
 ```typescript
 
 let persons = await context.Persons.Where({
@@ -271,6 +549,8 @@ await context.Messages.ReloadCachedRealitionsAsync(messages, ["To"]); //will loa
 This query will load/reload the "TO" property of all messages with Person objects
 
 
+---
+
 # Joins
 We can create complex Joins
 
@@ -294,6 +574,22 @@ We can create complex Joins
 This query will retrieve from database all messages sent to a person with name "camila" and that are sent this year.
 
 
+### Left join
+```typescript 
+   let msgs = await context.From(Person)
+                           .LeftJoin(Message)
+                           .On(Person, "Id", Message, "To")                                
+                           .Where(Message, {
+                                           Field : "Id",                                       
+                                           Value : undefined
+                                           })
+                          .Select(Person).ToListAsync();
+```
+
+This query will retrieve from database all persos who have no one message received.
+
+
+
 ## Order by
 
 ```typescript
@@ -302,6 +598,9 @@ let all = await context.Persons
                        .ToListAsync();
 ```
 
+
+---
+# Ordering and Limit
 ## Order by descending
 
 ```typescript
@@ -310,7 +609,7 @@ let all = await context.Persons
                               .ToListAsync();
 ```
 
-
+---
 ## Limit
 
 ```typescript
@@ -331,7 +630,9 @@ let person  = await context.Persons.Where({
 ```
 
 
-## Update person
+
+--- 
+# Update 
 
 ```typescript
 let person = await context.Persons.Where({
@@ -345,10 +646,10 @@ await context.Persons.UpdateAsync(person);
 
 ```
 
+--- 
 
 
-
-## Delete
+# Delete
 
 ```typescript
 let person = await context.Persons.Where({
@@ -359,7 +660,9 @@ let person = await context.Persons.Where({
 await context.Persons.DeleteAsync(person);
 ```
 
+
 # Delete or update many registers
+
 ## DeleteSelectionAsync
 ```typescript 
  await context.Persons.Where({
@@ -379,22 +682,7 @@ await context.Persons.DeleteAsync(person);
                       .UpdateSelectionAsync();
 ```
 
-
-# Inner and Left Join
-We can execute complex join operation 
-
-```typescript 
-let messagesToCamila = await context.From(Person)
-                               .InnerJoin(Message)
-                               .On(Person, "Id", Message, "To")       
-                               .Where(Person, 
-                                    {
-                                        Field : "Name",
-                                        Kind : Operation.CONSTAINS, 
-                                        Value : "camila"
-                                    })
-                               .Select(Message).Load("To").ToListAsync();
-```
+---
 
 # Fluent query methods
 
@@ -439,11 +727,11 @@ let persons  = await context.Persons.Where({Field : 'Age', Value : 1})
 let persons = await context.Persons.WhereField("MessagesReceived").IsNull().ToListAsync();      
 ```  
 
+--- 
 # Free hand query
 
 ```typescript
  let persons = await context.Persons.WhereAsString(`age > 30 or name ilike '%adriano%'`).ToListAsync();
-
 ```
 
 
@@ -451,119 +739,9 @@ let persons = await context.Persons.WhereField("MessagesReceived").IsNull().ToLi
 
 ```typescript
  let pg_result = await context.ExecuteQuery("select now()");
-
 ```
 
 
-# Entities used in this example
-
-
-### ./entities/Person.ts
-
-```typescript
-import { Table, Column, PrimaryKey, DataType, OneToMany, OneToOne, ManyToMany, DBTypes} from 'myorm_pg';
-import { Message } from './Message';
-
-@Table("person_tb")
-export class Person
-{
-    @PrimaryKey()
-    @Column()
-    @DataType(DBTypes.SERIAL)
-    public Id : number;
-
-    @Column()
-    public Name : string;
-
-    @Column("email_address")
-    public Email : string;
-
-    @Column()    
-    public Age : number; 
-    
-
-    @Column()
-    @DataType(DBTypes.INTEGER)
-    public CEP : number; 
-
-
-    @Column()
-    @DataType(DBTypes.TEXTARRAY)
-    public PhoneNumbers : string[];
-
-    @Column()
-    @DataType(DBTypes.INTEGERARRAY)
-    public Documents : number[];
-
-    @Column()
-    @DataType(DBTypes.DATE)
-    public Birth : Date;
-
-
-    @Column()
-    @OneToMany(()=> Message, "From")
-    public MessagesWriten? : Message[];
-
-    @Column()
-    @ManyToMany(()=> Message, "To")
-    public MessagesReceived? : Message[];
-
-  
-    constructor(name : string = "", email : string = "", age : number = 1)
-    {
-        this.Id = -1;
-        this.Name = name;
-        this.Email = email;
-        this.Age = age;
-        this.CEP = -1;
-        this.PhoneNumbers = [];
-        this.Birth = new Date(1992,4,23);       
-        this.Documents = []; 
-        this.MessagesReceived = [];
-        this.MessagesWriten = [];
-       
-    }
-       
-
-}
-```
-
-### ./entities/Message.ts
-
-```typescript
-import { Table, Column, PrimaryKey, DataType, ManyToOne, ManyToMany, DBTypes} from 'myorm_pg';
-import { Person } from './Person';
-
-@Table("message_tb")
-export class Message
-{
-    @PrimaryKey()
-    @Column()
-    @DataType(DBTypes.SERIAL)
-    public Id : number = -1;
-
-    @Column()
-    public Message : string;
-
-    @Column()
-    @ManyToOne(()=> Person, "MessagesWriten")
-    public From? : Person;
-
-    @Column()  
-    @ManyToMany(()=> Person, "MessagesReceived")  
-    public To? : Person[];     
-
-
-    constructor(message : string, from? : Person, to? : Person[])
-    {
-        this.Message = message;
-        this.From = from;
-        this.To = to;       
-    }
-       
-
-}
-```
 
 ## Contributing
 

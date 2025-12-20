@@ -44,6 +44,7 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
         this._context = context;
         this._set = new PGSetValue<T>();
         this._untrackeds = false;
+
     }
        
 
@@ -1963,8 +1964,8 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
 
             if(isArray)
             {
-                if(pgStatement.Statement.Value.lenght == 0)
-                    return `coalesce(array_length("${this._table}".${column}, 1), 0) = 0`;
+                if(pgStatement.Statement.Value.length == 0)
+                    return `("${this._table}".${column} is not null and coalesce(array_length("${this._table}".${column}, 1), 0) = 0)`;
 
                 if((pgStatement.Statement.Value as any[]).filter(s => s == undefined || s == null).length > 0)
                     throw new InvalidOperationException(`Can not compare relations with null or undefined objets`);

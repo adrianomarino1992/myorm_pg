@@ -7,3 +7,6 @@ export abstract class Entity {
     @DataType(DBTypes.SERIAL)
     public Id: number = -1;
 }
+
+
+

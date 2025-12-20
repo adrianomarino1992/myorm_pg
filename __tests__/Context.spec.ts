@@ -80,6 +80,28 @@ describe("Context", ()=>{
     
         });
 
+         test("Selecting an entity using a null value", async ()=>{
+       
+            let context = await CompleteSeedAsync();
+    
+            let mgs = await context.Messages
+                                        .Where(
+                                            {
+                                                Field : 'LinkTestValueInMessage',                                                 
+                                                Value : undefined
+                                            })
+                                        .ToListAsync();
+    
+           
+
+            expect(mgs.length).toBe(1);
+            expect(mgs[0].Message).toBe('Some message from Camila');
+            
+    
+            await TruncatePersonTableAsync();              
+    
+        });
+
         test("AsUntracked", async ()=>{
        
             let context = await SeedAsync();
