@@ -1,6 +1,6 @@
 # myorm_pg
 
-**myorm_pg** is a lightweight ORM written in **TypeScript** for **PostgreSQL**, inspired by the syntax and development experience of **MyORMForPostgreSQL (.NET)**.
+**myorm_pg** is a lightweight ORM written in **TypeScript** for **PostgreSQL**.
 
 It focuses on:
 - Strongly typed entities
