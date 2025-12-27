@@ -2027,7 +2027,7 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
                 return `"${this._table}".${column} <@ ${this.CreateValueStatement(typeName as DBTypes, pgStatement.Statement.Value)}`; 
             }
 
-            if([Operation.STARTWITH, Operation.CONSTAINS, Operation.ENDWITH, Operation.GREATHER, Operation.GREATHEROREQUALS].includes(pgStatement.Statement.Kind))
+            if([Operation.STARTWITH, Operation.CONTAINS, Operation.ENDWITH, Operation.GREATHER, Operation.GREATHEROREQUALS].includes(pgStatement.Statement.Kind))
             {
                 return `"${this._table}".${column} @> ${this.CreateValueStatement(typeName as DBTypes, pgStatement.Statement.Value)}`; 
             }           
@@ -2059,7 +2059,7 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
                     }
             }
 
-            if([Operation.CONSTAINS, Operation.ENDWITH, Operation.STARTWITH].filter(s => s == pgStatement.Statement.Kind).length > 0)
+            if([Operation.CONTAINS, Operation.ENDWITH, Operation.STARTWITH].filter(s => s == pgStatement.Statement.Kind).length > 0)
             {
                throw new InvalidOperationException(`Can execute ${pgStatement.Statement.Kind.toString().toLocaleLowerCase()} only with text and array fields`);
             }        
@@ -2086,7 +2086,7 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
         switch(operation)
         {
             case Operation.EQUALS : return ["=", "", ""];
-            case Operation.CONSTAINS : return ["ilike", "%", "%"];
+            case Operation.CONTAINS : return ["ilike", "%", "%"];
             case Operation.STARTWITH : return ["ilike", "", "%"];;
             case Operation.ENDWITH : return ["ilike", "%", ""];;
             case Operation.GREATHER : return [">", "", ""];;

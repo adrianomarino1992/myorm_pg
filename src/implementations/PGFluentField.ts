@@ -132,13 +132,13 @@ export default class PGFluentField<T extends object, K extends keyof T, P extend
     }
 
 
-    public Constains(value: T[K]): P  {
+    public Contains(value: T[K]): P  {
 
         if(this._isOr)
         {
             this._pgSet.Or({
                 Field : this._field,
-                Kind : Operation.CONSTAINS, 
+                Kind : Operation.CONTAINS, 
                 Value : value 
             });
     
@@ -147,7 +147,7 @@ export default class PGFluentField<T extends object, K extends keyof T, P extend
 
         this._pgSet.Where({
             Field : this._field,  
-            Kind : Operation.CONSTAINS,               
+            Kind : Operation.CONTAINS,               
             Value : value
         });     
 

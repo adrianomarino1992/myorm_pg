@@ -1,284 +1,291 @@
-
-
 import { TryAsync, CreateConnection } from "./functions/TestFunctions";
 import Type from "../src/core/design/Type";
-import PGConnection from "../src/implementations/PGDBConnection";
 import PGDBManager from "../src/implementations/PGDBManager";
 import Context from "./classes/TestContext";
 import ErrorContext from "./classes/ErrorContext";
-import {Person} from './classes/TestEntity';
-import EntityWithNoKey from './classes/EntityWithNoKey';
+import { Person } from "./classes/TestEntity";
+import EntityWithNoKey from "./classes/EntityWithNoKey";
 import { ConstraintFailException } from "../src/Index";
 
+describe("PostgreSQL database schema and metadata", () => {
 
-describe("Types and metadata", ()=>{
-    
+    const createManager = () => {
+        const connection = CreateConnection();
+        const manager = new PGDBManager(connection);
+        return { connection, manager };
+    };
 
-    test("Testing if a database exists", async ()=>{
+    test("should verify whether databases exist", async () => {
 
-        var conn = CreateConnection();
+        const { manager } = createManager();
 
-        var manager = new PGDBManager(conn);
+        const postgresExists = await manager.CheckDatabaseAsync("postgres");
+        const mysqlExists = await manager.CheckDatabaseAsync("mysql");
 
-        let postgres = await manager.CheckDatabaseAsync('postgres');
-        let mysql = await manager.CheckDatabaseAsync('mysql');
-       
-        expect(postgres).toBeTruthy();
-        expect(mysql).toBeFalsy();
+        expect(postgresExists).toBeTruthy();
+        expect(mysqlExists).toBeFalsy();
 
     });
 
+    test(
+        "should create a database when it does not exist",
+        async () => {
 
-    test("Testing create a database", async ()=>{
+            const { connection, manager } = createManager();
 
-        var conn = CreateConnection();
+            let exists = await manager.CheckDatabaseAsync("test_db");
 
-        var manager = new PGDBManager(conn);
-
-        let test_db = await manager.CheckDatabaseAsync('test_db');
-
-        if(test_db)
-        {
-            await conn.AsPostgres().OpenAsync();
-            await conn.ExecuteNonQueryAsync(`select pg_terminate_backend(pid) from pg_stat_activity where datname = 'test_db';`)
-            await conn.ExecuteNonQueryAsync(`drop database test_db;`);
-            await conn.CloseAsync();
-        }
-
-        await manager.CreateDataBaseAsync('test_db');
-       
-        test_db = await manager.CheckDatabaseAsync('test_db');
-
-        expect(test_db).toBeTruthy();        
-
-    },100000);
-
-
-    describe("Schemas", ()=>{
-       
-    
-        test("Testing create a table and checking if it was created", async ()=>{
-    
-            var conn = CreateConnection();
-    
-            var manager = new PGDBManager(conn);
-    
-            let test_table = await manager.CheckTableAsync(Person);
-    
-            if(test_table)
-            {
-                await conn.OpenAsync();
-                await conn.ExecuteNonQueryAsync(`drop table person_tb;`);
-                await conn.CloseAsync();
+            if (exists) {
+                await connection.AsPostgres().OpenAsync();
+                await connection.ExecuteNonQueryAsync(
+                    `select pg_terminate_backend(pid) 
+                     from pg_stat_activity 
+                     where datname = 'test_db';`
+                );
+                await connection.ExecuteNonQueryAsync(
+                    "drop database test_db;"
+                );
+                await connection.CloseAsync();
             }
-            
-            await manager.CreateTableAsync(Person);
-           
-            test_table = await manager.CheckTableAsync(Person);
-    
-            expect(test_table).toBeTruthy();        
-    
-        });
 
-        test("Testing erro while creating a table with no primary key ", async ()=>{
-    
-            var conn = CreateConnection();
-    
-            var manager = new PGDBManager(conn);
-    
-           var errorContext = new ErrorContext(manager);
-    
-            try {
+            await manager.CreateDataBaseAsync("test_db");
 
-                await errorContext.UpdateDatabaseAsync();
-                fail("Should not create the table");
+            exists = await manager.CheckDatabaseAsync("test_db");
 
-            } catch (err) {
-              
-                expect(err instanceof ConstraintFailException).toBeTruthy();
+            expect(exists).toBeTruthy();
+
+        },
+        100_000
+    );
+
+    describe("Tables (schemas)", () => {
+
+        test(
+            "should create a table and confirm it exists",
+            async () => {
+
+                const { connection, manager } = createManager();
+
+                let exists = await manager.CheckTableAsync(Person);
+
+                if (exists) {
+                    await connection.OpenAsync();
+                    await connection.ExecuteNonQueryAsync(
+                        "drop table person_tb;"
+                    );
+                    await connection.CloseAsync();
+                }
+
+                await manager.CreateTableAsync(Person);
+
+                exists = await manager.CheckTableAsync(Person);
+
+                expect(exists).toBeTruthy();
+
             }
-           
-            let test_table = await manager.CheckTableAsync(EntityWithNoKey);
-    
-            expect(test_table).toBeFalsy();        
-    
-        });
+        );
 
+        test(
+            "should throw an error when creating a table without a primary key",
+            async () => {
 
-        describe("Testing columns", ()=>{
+                const { manager } = createManager();
+                const errorContext = new ErrorContext(manager);
 
-
-           
-        
-        
-            test("Testing create a column and checking if it was created", async ()=>{
-        
-                var conn = CreateConnection();
-        
-                var manager = new PGDBManager(conn);
-        
-                let test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                if(test_column)
-                {
-                    await conn.OpenAsync();
-                    await conn.ExecuteNonQueryAsync(`alter table person_tb drop column name;`);
-                    await conn.CloseAsync();
+                try {
+                    await errorContext.UpdateDatabaseAsync();
+                    fail("Expected table creation to fail");
+                } catch (err) {
+                    expect(err).toBeInstanceOf(ConstraintFailException);
                 }
-                
-                await manager.CreateColumnAsync(Person, 'Name');
-               
-                test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                expect(test_column).toBeTruthy();        
-        
-            });
 
+                const exists = await manager.CheckTableAsync(EntityWithNoKey);
+                expect(exists).toBeFalsy();
 
-            test("Testing create a column and drop it", async ()=>{
-        
-                var conn = CreateConnection();
-        
-                var manager = new PGDBManager(conn);
-        
-                let test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                if(test_column)
-                {
-                    await conn.OpenAsync();
-                    await conn.ExecuteNonQueryAsync(`alter table person_tb drop column name;`);
-                    await conn.CloseAsync();
-                }
-                
-                await manager.CreateColumnAsync(Person, 'Name');
-               
-                test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                expect(test_column).toBeTruthy();     
-                
-                await manager.DropColumnAsync(Person, 'Name');
+            }
+        );
 
-                test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                expect(test_column).toBeFalsy();     
-        
-            });
-    
-        });
+        describe("Columns", () => {
 
+            test(
+                "should create a column and verify it exists",
+                async () => {
 
+                    const { connection, manager } = createManager();
 
-        describe("Schemas within context", ()=>{
+                    let exists = await manager.CheckColumnAsync(Person, "Name");
 
-
-            test("Testing crete columns from a objetc", async ()=>{
-    
-                await TryAsync(async()=>{
-
-                    var conn = CreateConnection();
-        
-                    var manager = new PGDBManager(conn);
-
-                    manager.SetLogger((s, t) => {
-
-                        console.log(s);
-                    });
-            
-                    var context = new Context(manager);  
-
-                    for(let t of context.GetMappedTypes())
-                    {
-                        if(await manager.CheckTableAsync(t))
-                        {
-                            await conn.OpenAsync();
-                            await conn.ExecuteNonQueryAsync(`drop table ${Type.GetTableName(t)};`);
-                            await conn.CloseAsync();
-                        }
-                    } 
-
-                     await context.UpdateDatabaseAsync();
-
-                    for(let t of context.GetMappedTypes())
-                    {
-                        expect(await manager.CheckTableAsync(t)).toBeTruthy();
-
-                        for(let c of Type.GetColumnNameAndType(t))
-                        {
-                            expect(await manager.CheckColumnAsync(t, c.Field)).toBeTruthy();
-                        }                    
+                    if (exists) {
+                        await connection.OpenAsync();
+                        await connection.ExecuteNonQueryAsync(
+                            "alter table person_tb drop column name;"
+                        );
+                        await connection.CloseAsync();
                     }
-                }, err => 
-                {
-                    throw err;
-                });
-                
-        
-            }, 5000000);
 
+                    await manager.CreateColumnAsync(Person, "Name");
 
-            test("Testing check column type", async ()=>{
-        
-                var conn = CreateConnection();
-        
-                var manager = new PGDBManager(conn);
-        
-                let test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                if(test_column)
-                {
-                    await conn.OpenAsync();
-                    await conn.ExecuteNonQueryAsync(`alter table person_tb drop column name;`);
-                    await conn.CloseAsync();
+                    exists = await manager.CheckColumnAsync(Person, "Name");
+
+                    expect(exists).toBeTruthy();
+
                 }
-                
-                await manager.CreateColumnAsync(Person, 'Name');
-               
-                test_column = await manager.CheckColumnAsync(Person, 'Name');
-        
-                expect(test_column).toBeTruthy();     
-                
-                let type = await manager.CheckColumnTypeAsync(Person, 'Name');               
-        
-                expect(type).toBe("text");     
-        
-            });
+            );
 
+            test(
+                "should create and then drop a column",
+                async () => {
 
-            test("Testing change column type", async ()=>{
-        
-                var conn = CreateConnection();
-        
-                var manager = new PGDBManager(conn);
-        
-                let test_column = await manager.CheckColumnAsync(Person, 'CEP');
-        
-                if(test_column)
-                {
-                    await conn.OpenAsync();
-                    await conn.ExecuteNonQueryAsync(`alter table person_tb drop column cep;`);    
-                    await conn.ExecuteNonQueryAsync(`alter table person_tb add column cep bigint;`);                
-                    await conn.CloseAsync();
-                }               
-                
-               
-                test_column = await manager.CheckColumnAsync(Person, 'CEP');
-        
-                expect(test_column).toBeTruthy();     
-                
-                let type = await manager.CheckColumnTypeAsync(Person, 'CEP');               
-        
-                expect(type).toBe("bigint");  
+                    const { connection, manager } = createManager();
 
-                await manager.ChangeColumnTypeAsync(Person, "CEP");
+                    let exists = await manager.CheckColumnAsync(Person, "Name");
 
-                type = await manager.CheckColumnTypeAsync(Person, 'CEP');               
-        
-                expect(type).toBe("integer");                  
-                
-        
-            });
-        
-    
+                    if (exists) {
+                        await connection.OpenAsync();
+                        await connection.ExecuteNonQueryAsync(
+                            "alter table person_tb drop column name;"
+                        );
+                        await connection.CloseAsync();
+                    }
+
+                    await manager.CreateColumnAsync(Person, "Name");
+
+                    expect(
+                        await manager.CheckColumnAsync(Person, "Name")
+                    ).toBeTruthy();
+
+                    await manager.DropColumnAsync(Person, "Name");
+
+                    expect(
+                        await manager.CheckColumnAsync(Person, "Name")
+                    ).toBeFalsy();
+
+                }
+            );
+
+        });
+
+        describe("Schema synchronization using context", () => {
+
+            test(
+                "should create all tables and columns defined in the context",
+                async () => {
+
+                    await TryAsync(
+                        async () => {
+
+                            const { connection, manager } = createManager();
+
+                            manager.SetLogger((message) => {
+                                console.log(message);
+                            });
+
+                            const context = new Context(manager);
+
+                            for (const type of context.GetMappedTypes()) {
+                                if (await manager.CheckTableAsync(type)) {
+                                    await connection.OpenAsync();
+                                    await connection.ExecuteNonQueryAsync(
+                                        `drop table ${Type.GetTableName(type)};`
+                                    );
+                                    await connection.CloseAsync();
+                                }
+                            }
+
+                            await context.UpdateDatabaseAsync();
+
+                            for (const type of context.GetMappedTypes()) {
+                                expect(
+                                    await manager.CheckTableAsync(type)
+                                ).toBeTruthy();
+
+                                for (const column of Type.GetColumnNameAndType(type)) {
+                                    expect(
+                                        await manager.CheckColumnAsync(
+                                            type,
+                                            column.Field
+                                        )
+                                    ).toBeTruthy();
+                                }
+                            }
+
+                        },
+                        err => {
+                            throw err;
+                        }
+                    );
+
+                },
+                5_000_000
+            );
+
+            test(
+                "should validate the column type",
+                async () => {
+
+                    const { connection, manager } = createManager();
+
+                    let exists = await manager.CheckColumnAsync(Person, "Name");
+
+                    if (exists) {
+                        await connection.OpenAsync();
+                        await connection.ExecuteNonQueryAsync(
+                            "alter table person_tb drop column name;"
+                        );
+                        await connection.CloseAsync();
+                    }
+
+                    await manager.CreateColumnAsync(Person, "Name");
+
+                    const type = await manager.CheckColumnTypeAsync(
+                        Person,
+                        "Name"
+                    );
+
+                    expect(type).toBe("text");
+
+                }
+            );
+
+            test(
+                "should change a column type when it differs from the model",
+                async () => {
+
+                    const { connection, manager } = createManager();
+
+                    let exists = await manager.CheckColumnAsync(Person, "CEP");
+
+                    if (exists) {
+                        await connection.OpenAsync();
+                        await connection.ExecuteNonQueryAsync(
+                            "alter table person_tb drop column cep;"
+                        );
+                        await connection.ExecuteNonQueryAsync(
+                            "alter table person_tb add column cep bigint;"
+                        );
+                        await connection.CloseAsync();
+                    }
+
+                    expect(
+                        await manager.CheckColumnAsync(Person, "CEP")
+                    ).toBeTruthy();
+
+                    let type = await manager.CheckColumnTypeAsync(
+                        Person,
+                        "CEP"
+                    );
+
+                    expect(type).toBe("bigint");
+
+                    await manager.ChangeColumnTypeAsync(Person, "CEP");
+
+                    type = await manager.CheckColumnTypeAsync(Person, "CEP");
+
+                    expect(type).toBe("integer");
+
+                }
+            );
+
         });
 
     });

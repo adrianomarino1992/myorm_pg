@@ -13,7 +13,7 @@ beforeAll(async()=>{
 describe("Context", ()=>{    
 
     
-    test("Testing constructor", async ()=>{
+    test("Should create an context from constructor", async ()=>{
        
         let context = CreateContext();
         
@@ -24,7 +24,7 @@ describe("Context", ()=>{
     });
 
 
-    test("Testing access some collection", async ()=>{
+    test("Should access some collection from an generic method", async ()=>{
 
         expect.assertions(3);
 
@@ -34,7 +34,7 @@ describe("Context", ()=>{
 
         try
         {
-            let fail  = context.Collection(String);
+            let _  = context.Collection(String);
         }
         catch(e)
         {
@@ -52,7 +52,7 @@ describe("Context", ()=>{
 
     describe("Query", ()=>{
 
-        test("Selecting an entity in real database", async ()=>{
+        test("Should select an entity in real database", async ()=>{
        
             let context = await SeedAsync();
     
@@ -80,7 +80,7 @@ describe("Context", ()=>{
     
         });
 
-         test("Selecting an entity using a null value", async ()=>{
+         test("Should select an entity using a undefined value", async ()=>{
        
             let context = await CompleteSeedAsync();
     
@@ -102,7 +102,7 @@ describe("Context", ()=>{
     
         });
 
-        test("AsUntracked", async ()=>{
+        test("Should get data without orm metadata", async ()=>{
        
             let context = await SeedAsync();
     
@@ -136,7 +136,7 @@ describe("Context", ()=>{
 
         describe("Quering array", ()=>{
 
-            test("Selecting an entity in real database that documents contains 5", async ()=>{
+            test("Should select an entity in real database that documents contains 5", async ()=>{
            
                 let context = await SeedAsync();
         
@@ -144,7 +144,7 @@ describe("Context", ()=>{
                                             .Where(
                                                 {
                                                     Field : 'Documents', 
-                                                    Kind: Operation.CONSTAINS, 
+                                                    Kind: Operation.CONTAINS, 
                                                     Value : [5]
                                                 })
                                             .ToListAsync();               
@@ -168,7 +168,7 @@ describe("Context", ()=>{
 
     describe("Ordenation", ()=>{
         
-        test("Testing order by asc and desc", async ()=>{
+        test("Should order results in ascending and descending order", async ()=>{
        
             let context = await SeedAsync();
             
@@ -194,7 +194,7 @@ describe("Context", ()=>{
         });
 
 
-        test("Testing order by asc and offset", async ()=>{
+        test("Should apply ordering with offset and limit", async ()=>{
        
             let context = await SeedAsync();
             
@@ -210,9 +210,9 @@ describe("Context", ()=>{
         
     });
 
-    describe("Count and exists", ()=>{
+    describe("Count and existence checks", ()=>{
         
-        test("Testing Count all", async ()=>{
+        test("Should count all entities", async ()=>{
        
             let context = await SeedAsync();
             
@@ -225,11 +225,11 @@ describe("Context", ()=>{
         });
 
 
-        test("Testing Count with where", async ()=>{
+        test("Should count entities using a filter", async ()=>{
        
             let context = await SeedAsync();
             
-            let count = await context.Persons.Where({Field: 'Name', Kind: Operation.CONSTAINS, Value: 'adriano'}).CountAsync();
+            let count = await context.Persons.Where({Field: 'Name', Kind: Operation.CONTAINS, Value: 'adriano'}).CountAsync();
             
             expect(count).toBe(1);
 
@@ -237,7 +237,7 @@ describe("Context", ()=>{
     
         });
 
-        test("Testing Exists all", async ()=>{
+        test("Should check existence of entities", async ()=>{
        
             let context = await SeedAsync();
             
@@ -253,17 +253,17 @@ describe("Context", ()=>{
         });
 
 
-        test("Testing Exists with where", async ()=>{
+        test("Should check existence of entities using a filter", async ()=>{
        
             let context = await SeedAsync();
             
-            let exists = await context.Persons.Where({Field: 'Name', Kind: Operation.CONSTAINS, Value: 'adriano'}).ExistsAsync();
+            let exists = await context.Persons.Where({Field: 'Name', Kind: Operation.CONTAINS, Value: 'adriano'}).ExistsAsync();
             
             expect(exists).toBeTruthy();
 
             await TruncatePersonTableAsync();
 
-            exists = await context.Persons.Where({Field: 'Name', Kind: Operation.CONSTAINS, Value: 'adriano'}).ExistsAsync();
+            exists = await context.Persons.Where({Field: 'Name', Kind: Operation.CONTAINS, Value: 'adriano'}).ExistsAsync();
             
             expect(exists).toBeFalsy();    
         });
@@ -271,9 +271,9 @@ describe("Context", ()=>{
     });
     
     
-    describe("Update an entity", ()=>{
+    describe("Updating entities", ()=>{
 
-        test("Updating an entity in real database", async ()=>{
+        test("Should update an entity in the real database", async ()=>{
        
             let context = await SeedAsync();
     
@@ -316,24 +316,24 @@ describe("Context", ()=>{
 
         describe("Update relations", ()=>{
 
-            test("Updating only one field", async ()=>{
+            test("Should update only one field", async ()=>{
         
                 let context = await CompleteSeedAsync();
         
                 let message = await context.Messages
-                                        .Where({Field : "Message", Kind : Operation.CONSTAINS, Value : "from Adriano to"})
+                                        .Where({Field : "Message", Kind : Operation.CONTAINS, Value : "from Adriano to"})
                                         .Load("From")
                                         .Load("To")
                                         .FirstOrDefaultAsync();
         
                 expect(message?.Message).toBe("Some message from Adriano to nobody");
         
-                message!.From = await context.Persons.WhereField("Name").Constains("camila").FirstOrDefaultAsync()!;
+                message!.From = await context.Persons.WhereField("Name").Contains("camila").FirstOrDefaultAsync()!;
 
                 await context.Messages.UpdateAsync(message!);
 
                 message = await context.Messages
-                                    .Where({Field : "Message", Kind : Operation.CONSTAINS, Value : "from Adriano to"})
+                                    .Where({Field : "Message", Kind : Operation.CONTAINS, Value : "from Adriano to"})
                                     .Load("From")
                                     .Load("To")
                                     .FirstOrDefaultAsync();
@@ -341,16 +341,16 @@ describe("Context", ()=>{
                 expect(message?.From?.Name).toBe("camila");
 
                 
-                message!.From = await context.Persons.WhereField("Name").Constains("adriano").FirstOrDefaultAsync()!;
+                message!.From = await context.Persons.WhereField("Name").Contains("adriano").FirstOrDefaultAsync()!;
 
                 expect(message?.From?.Name).toBe("adriano");
 
-                message!.To = [(await context.Persons.WhereField("Name").Constains("camila").FirstOrDefaultAsync())!];
+                message!.To = [(await context.Persons.WhereField("Name").Contains("camila").FirstOrDefaultAsync())!];
 
                 await context.Messages.UpdateObjectAndRelationsAsync(message!, ["From"]);
 
                 message = await context.Messages
-                                        .Where({Field : "Message", Kind : Operation.CONSTAINS, Value : "from Adriano to"})
+                                        .Where({Field : "Message", Kind : Operation.CONTAINS, Value : "from Adriano to"})
                                         .Load("From")
                                         .Load("To")
                                         .FirstOrDefaultAsync();
@@ -366,7 +366,7 @@ describe("Context", ()=>{
 
     describe("Delete an entity", ()=>{
 
-        test("Deleting an entity in real database", async ()=>{
+        test("Should delete an entity from the real database", async ()=>{
        
             let context = await SeedAsync();
     

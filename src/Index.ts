@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+
 import { DBTypes } from "./core/enums/DBTypes";
 import SchemasDecorators from "./core/decorators/SchemasDecorators";
 import PGDBConnection from "./implementations/PGDBConnection";

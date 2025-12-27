@@ -1,6 +1,4 @@
 
-import 'reflect-metadata';
-
 import SchemasDecorators from '../decorators/SchemasDecorators';
 import { DBTypes } from '../enums/DBTypes';
 import TypeNotSuportedException from '../exceptions/TypeNotSuportedException';

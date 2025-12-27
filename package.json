@@ -22,7 +22,7 @@
   "homepage": "https://github.com/adrianomarino1992/myorm_pg#readme",
   "license": "ISC",
   "dependencies": {
-    "myorm_core": "^8.1.0",
+    "myorm_core": "^8.3.0",
     "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13"
   },

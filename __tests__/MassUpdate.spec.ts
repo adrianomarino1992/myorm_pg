@@ -5,7 +5,7 @@ import {CompleteSeedAsync, TruncateTablesAsync} from './functions/TestFunctions'
 
 describe("Mass operations", ()=>{    
 
-    test("Testing a mass update in all table", async ()=>{
+    test("Should update all entities of an table", async ()=>{
        
         let context = await CompleteSeedAsync();
 
@@ -18,7 +18,7 @@ describe("Mass operations", ()=>{
         
     },500000);   
 
-    test("Testing a mass update in some lines of table", async ()=>{
+    test("Should update some entities of an table", async ()=>{
        
         let context = await CompleteSeedAsync();
 
@@ -40,7 +40,7 @@ describe("Mass operations", ()=>{
         
     }, 500000);     
     
-    test("Testing a mass update with mapped objets in some lines of table", async ()=>{
+    test("Should update a relation field of all entities of an table", async ()=>{
        
         let context = await CompleteSeedAsync();
 
@@ -66,7 +66,7 @@ describe("Mass operations", ()=>{
     }, 500000);  
 
 
-    test("Testing a mass update with mapped objets in many to many relation", async ()=>{
+    test("Should update a many to many relation field of all entities of an table", async ()=>{
        
         let context = await CompleteSeedAsync();
 
