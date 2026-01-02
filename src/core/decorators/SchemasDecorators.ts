@@ -92,11 +92,23 @@ export default class SchemasDecorators
         return meta;
     }
 
+    private static MarkAsColumn(target : Object, propertyName : string)
+    {
+        let column = this.GetColumnAttribute(typeof target == "function" ? target : target.constructor, propertyName);
+
+        if(!column)
+        {
+            SchemasDecorators.DefinePropertyAsDecorated(typeof target == "function" ? target : target.constructor, propertyName.toString());
+            OwnMetaDataContainer.Set(typeof target == "function" ? target : target.constructor, SchemasDecorators._columnAttribute, propertyName, propertyName.toLowerCase());
+            Reflect.defineMetadata(SchemasDecorators._columnAttribute, propertyName.toLowerCase(), typeof target == "function" ? target.prototype : target, propertyName);
+        }
+    }
+
     public static NotNull()
     {
         return function (target : Object, propertyName : string)
         {
-            
+            SchemasDecorators.MarkAsColumn(target, propertyName);
             SchemasDecorators.DefinePropertyAsDecorated(typeof target == "function" ? target : target.constructor, propertyName.toString());
             OwnMetaDataContainer.Set(typeof target == "function" ? target : target.constructor, SchemasDecorators._notNullAttribute, propertyName, true);
             Reflect.defineMetadata(SchemasDecorators._notNullAttribute, true, typeof target == "function" ? target.prototype : target, propertyName);
@@ -139,6 +151,7 @@ export default class SchemasDecorators
         return function (target : Object, propertyName : string)
         {
 
+            SchemasDecorators.MarkAsColumn(target, propertyName);
             SchemasDecorators.DefinePropertyAsDecorated(typeof target == "function" ? target : target.constructor, propertyName.toString());
             OwnMetaDataContainer.Set(typeof target == "function" ? target : target.constructor, SchemasDecorators._relationAttribute, propertyName,  { TypeBuilder : lazyBuilder, Relation : relation, Field : property });
             Reflect.defineMetadata(SchemasDecorators._relationAttribute, { TypeBuilder : lazyBuilder, Relation : relation, Field : property }, typeof target == "function" ? target.prototype : target, propertyName);
@@ -163,6 +176,7 @@ export default class SchemasDecorators
         return function (target : Object, propertyName : string)
         {
 
+            SchemasDecorators.MarkAsColumn(target, propertyName);
             SchemasDecorators.DefinePropertyAsDecorated(typeof target == "function" ? target : target.constructor, propertyName.toString());
             OwnMetaDataContainer.Set(typeof target == "function" ? target : target.constructor, SchemasDecorators._primaryKeyAttribute, propertyName,  true);
             Reflect.defineMetadata(SchemasDecorators._primaryKeyAttribute, true , typeof target == "function" ? target.prototype : target, propertyName);
@@ -196,6 +210,7 @@ export default class SchemasDecorators
 
         return function (target : Object, propertyName : string)
         {
+            SchemasDecorators.MarkAsColumn(target, propertyName);
             SchemasDecorators.DefinePropertyAsDecorated(typeof target == "function" ? target : target.constructor, propertyName.toString());
             OwnMetaDataContainer.Set(typeof target == "function" ? target : target.constructor, SchemasDecorators._dataTypeAttribute, propertyName,  type);
             Reflect.defineMetadata(SchemasDecorators._dataTypeAttribute, type, typeof target == "function" ? target.prototype : target, propertyName);

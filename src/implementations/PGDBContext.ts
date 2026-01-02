@@ -17,6 +17,7 @@ import {DBOperationLogHandler, LogType} from 'myorm_core';
 export default abstract class PGDBContext extends AbstractContext
 {
     protected _manager :PGDBManager;    
+    private _inTransactionMode: boolean = false;
 
     private _mappedTypes! : {new (...args: any[]) : unknown}[];
 
@@ -98,10 +99,47 @@ export default abstract class PGDBContext extends AbstractContext
     public From<T extends Object>(arg: (new (...args: any[]) => T)): IJoiningQuery {
         
         return new JoiningQuery(this, arg);
-    }   
-          
+    }       
     
+    
+    public async BeginTransactionAsync() : Promise<void>
+    {
+        await this._manager.BeginTransactionAsync();
+        this._inTransactionMode = true;
+    }
 
+    public async SavePointAsync(savepoint : string) : Promise<void>
+    {
+        if(!savepoint || !savepoint.trim())
+            throw new InvalidOperationException("The name of savepoint is required");
+
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not create a savepoint before start a transaction. Call the ${PGDBContext.name}.${this.BeginTransactionAsync.name} method before`);
+
+         await this._manager.SavePointAsync(savepoint);
+    }
+
+
+    public async CommitAsync() : Promise<any>
+    {           
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not do a commit before start a transaction. Call the ${PGDBContext.name}.${this.BeginTransactionAsync.name} method before`);
+
+        await this._manager.CommitAsync();
+        this._inTransactionMode = false;
+    }
+
+
+    public async RollBackAsync(toSavePoint?: string) : Promise<any>
+    {
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not do a rollback before start a transaction. Call the ${PGDBContext.name}.${this.BeginTransactionAsync.name} method before`);
+
+       await this._manager.RollBackAsync(toSavePoint);
+        
+        if(!toSavePoint)
+            this._inTransactionMode = false;
+    } 
 }
 
 interface IJoinMap{JoiningTable : Function, Type: Join, Left : Function, LeftKey : string, Right : Function, RightKey : string};

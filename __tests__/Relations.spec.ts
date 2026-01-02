@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
 import { TryAsync , TruncateTablesAsync, CreateContext } from './functions/TestFunctions';
@@ -11,7 +12,7 @@ beforeAll(async ()=> await TruncateTablesAsync());
 describe("Add objects with relations", ()=>{
 
     
-    test("Add Message with persons", async()=>{
+    test("Add Message with persons and create relations", async()=>{
         
         await TryAsync(async () =>{
 
@@ -45,6 +46,20 @@ describe("Add objects with relations", ()=>{
             expect(msgfromDB!.To![0].Name).toBe("Camila");
             expect(msgfromDB!.To![1].Name).toBe("Juliana");
             expect(msgfromDB!.To![2].Name).toBe("Andre");
+
+            let fromPerson = msg.From;
+            let toPersons = msg.To;
+
+            let reloadedFromPerson = await context.Persons.WhereField("Id").IsEqualTo(fromPerson?.Id!).Load("MessagesWriten").FirstOrDefaultAsync();
+            let reloadedToPersons = await context.Persons.WhereField("Id").IsInsideIn(toPersons!.map(s => s.Id)).Load("MessagesReceived").ToListAsync();
+
+            expect(reloadedFromPerson).not.toBeUndefined();
+            expect(reloadedToPersons.length).toBe(toPersons?.length);
+
+            expect(reloadedFromPerson?.MessagesWriten?.filter(s => s.Id == msg.Id).length).toBe(1);
+
+            for(let to of reloadedToPersons)
+                expect(to?.MessagesReceived?.filter(s => s.Id == msg.Id).length).toBe(1);
 
 
         }, err => 

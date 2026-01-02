@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { InvalidOperationException } from "../src/Index";
 import { Message } from "./classes/RelationEntity";
 import { Person } from "./classes/TestEntity";

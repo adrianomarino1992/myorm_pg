@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Person } from "./classes/TestEntity";
 import Type from '../src/core/design/Type';
 import RawTypes from "./classes/RawTypes";

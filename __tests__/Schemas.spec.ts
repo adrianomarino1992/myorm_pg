@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { TryAsync, CreateConnection } from "./functions/TestFunctions";
 import Type from "../src/core/design/Type";
 import PGDBManager from "../src/implementations/PGDBManager";

@@ -1,7 +1,4 @@
 import {AbstractManager} from 'myorm_core';
-
-
-import 'reflect-metadata';
 import TypeNotSuportedException from '../core/exceptions/TypeNotSuportedException';
 import Type from '../core/design/Type';
 import PGDBConnection from './PGDBConnection';
@@ -17,11 +14,74 @@ export default class PGDBManager extends AbstractManager
     
     private _connection! : PGDBConnection;   
     private _logger? : DBOperationLogHandler;
+    private _inTransactionMode : boolean = false;
 
     public constructor(connection : PGDBConnection)
     {
         super();
         this._connection = connection;
+    }
+
+    public static Build(host : string, port : number, dababase : string, user : string, pass : string) : PGDBManager
+    {
+        return new PGDBManager(new PGDBConnection(host, port, dababase, user, pass));
+    }
+
+    public static BuildFromEnviroment()
+    {
+        let host = process.env.DB_HOST || "";
+        let port = process.env.DB_PORT || "0";
+        let username = process.env.DB_USER || "";
+        let password = process.env.DB_PASS || "";
+        let database = process.env.DB_NAME || "";
+        let intPort = 0;
+        try{
+            intPort = Number.parseInt(port);
+        }catch{}
+        
+        if(!host)
+            throw new InvalidOperationException(`DB_HOST enviroment variable was no value`);
+
+        if(!port || Number.isNaN(intPort))
+            throw new InvalidOperationException(`DB_PORT enviroment variable was no value`);
+
+        if(!username)
+            throw new InvalidOperationException(`DB_USER enviroment variable was no value`);
+
+        if(!password)
+            throw new InvalidOperationException(`DB_PASS enviroment variable was no value`);
+            
+        if(!database)
+            throw new InvalidOperationException(`DB_NAME enviroment variable was no value`);
+
+        return PGDBManager.Build(host, intPort, database, username, password)
+    }
+    
+    private CreatePromisse<T>(func : ()=> Promise<T>) : Promise<T>
+    {
+        return new Promise<T>(async (resolve, reject)=>{
+
+            let success = true;
+            let result : any;
+            try
+            {                
+                result = await func();
+            }
+            catch(err)
+            {
+                success = false;
+                result = err;
+            }
+            finally
+            {
+                await this.CloseConnectionIfNeedAsync();
+                
+                if(success)
+                    resolve(result);
+                else
+                    reject(result);
+            }
+        });
     }
 
     public async CheckConnectionAsync(): Promise<boolean> {
@@ -30,7 +90,7 @@ export default class PGDBManager extends AbstractManager
 
         try
         {
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
             return true;
 
         }
@@ -40,7 +100,7 @@ export default class PGDBManager extends AbstractManager
         }
         finally
         {
-            await this._connection.CloseAsync();
+            await this.CloseConnectionIfNeedAsync();
         }
     }
     
@@ -77,7 +137,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Checking table ${table}`, LogType.CHECKTABLE);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             let result = await this._connection.ExecuteAsync(`select * from information_schema.tables where table_catalog = '${this._connection.DataBaseName}' and table_name = '${table}';`);
 
@@ -92,7 +152,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Creating table ${table}`, LogType.CREATETABLE);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             await this._connection.ExecuteAsync(`create table if not exists "${table}"();`);
             
@@ -108,7 +168,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Checking column ${table}.${column}`, LogType.CHECKCOLUMN);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             let result = await this._connection.ExecuteAsync(`select * from information_schema.columns where table_name = '${table}' and column_name = '${column}';`);
 
@@ -125,7 +185,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Dropping table ${table}`, LogType.CREATETABLE);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             await this._connection.ExecuteAsync(`drop table if exists "${table}";`);
             
@@ -141,7 +201,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Checking column ${table}.${column} type`, LogType.CHECKCOLUMNTYPE);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             let result = await this._connection.ExecuteAsync(`select data_type from information_schema.columns where table_name = '${table}' and column_name = '${column}';`);
 
@@ -164,7 +224,7 @@ export default class PGDBManager extends AbstractManager
 
             let type = this.GetTypeOfColumn(cTor, key);
             
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             await this._connection.ExecuteAsync(`alter table "${table}" alter column "${column}" type ${type};`);            
             
@@ -182,7 +242,7 @@ export default class PGDBManager extends AbstractManager
 
             this.Log(`Dropping table ${table}`, LogType.CREATETABLE);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             await this._connection.ExecuteAsync(`alter table "${table}" drop column "${column}";`);
             
@@ -201,7 +261,7 @@ export default class PGDBManager extends AbstractManager
 
             let type = this.GetTypeOfColumn(cTor, key);
             
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             await this._connection.ExecuteAsync(`alter table "${table}" add column "${column}" ${type};`);
 
@@ -290,7 +350,7 @@ export default class PGDBManager extends AbstractManager
             if(!hasPrimaryKey)
                 throw new ConstraintFailException(`The type ${cTor.name} has not a primary key column`);
 
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             if(!await this.CheckTableAsync(cTor))
                 await this.CreateTableAsync(cTor);
@@ -320,11 +380,69 @@ export default class PGDBManager extends AbstractManager
 
     }
 
+    
+    public async BeginTransactionAsync() : Promise<void>
+    {
+        await this.OpenConnectionIfNeedAsync();
+        await this._connection.BeginTransactionAsync();
+        this._inTransactionMode = true;
+    }
+
+    public async SavePointAsync(savepoint : string) : Promise<void>
+    {
+        if(!savepoint || !savepoint.trim())
+            throw new InvalidOperationException("The name of savepoint is required");
+
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not create a savepoint before start a transaction. Call the ${PGDBManager.name}.${this.BeginTransactionAsync.name} method before`);
+
+        await this._connection.SavePointAsync(savepoint);
+    }
+
+
+    public async CommitAsync() : Promise<any>
+    {           
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not do a commit before start a transaction. Call the ${PGDBManager.name}.${this.BeginTransactionAsync.name} method before`);
+
+        await this._connection.CommitAsync();
+        this._inTransactionMode = false;
+    }
+
+    public async RollBackAsync(toSavePoint?: string) : Promise<any>
+    {
+        if(!this._inTransactionMode)
+            throw new InvalidOperationException(`Can not do a rollback before start a transaction. Call the ${PGDBManager.name}.${this.BeginTransactionAsync.name} method before`);
+
+        await this._connection.RollBackAsync(toSavePoint);
+        
+        if(!toSavePoint)
+            this._inTransactionMode = false;
+    } 
+
+    private async OpenConnectionIfNeedAsync() : Promise<void>
+    {
+        if(this._inTransactionMode && this._connection && this._connection.IsOpen)
+            return;
+
+        await this._connection.OpenAsync();
+    }
+
+    private async CloseConnectionIfNeedAsync() : Promise<void>
+    {
+        if(this._inTransactionMode && this._connection && this._connection.IsOpen)
+            return;
+
+        await this._connection.CloseAsync();
+    }
+
+
     public async ExecuteNonQueryAsync(query: string): Promise<void> {
 
         return this.CreatePromisse<void>(async ()=>
-        {   
-            await this._connection.OpenAsync();
+        {  
+            
+            await this.OpenConnectionIfNeedAsync();
 
             this.Log(query, LogType.QUERY);
             
@@ -335,9 +453,9 @@ export default class PGDBManager extends AbstractManager
 
     public async ExecuteAsync(query: string): Promise<any> {
 
-        return this.CreatePromisse<void>(async ()=>
+        return this.CreatePromisse<any>(async ()=>
         {           
-            await this._connection.OpenAsync();
+            await this.OpenConnectionIfNeedAsync();
 
             this.Log(query, LogType.QUERY);
 
@@ -346,67 +464,7 @@ export default class PGDBManager extends AbstractManager
         });
     }
 
-    public static Build(host : string, port : number, dababase : string, user : string, pass : string) : PGDBManager
-    {
-        return new PGDBManager(new PGDBConnection(host, port, dababase, user, pass));
-    }
-
-    public static BuildFromEnviroment()
-    {
-        let host = process.env.DB_HOST || "";
-        let port = process.env.DB_PORT || "0";
-        let username = process.env.DB_USER || "";
-        let password = process.env.DB_PASS || "";
-        let database = process.env.DB_NAME || "";
-        let intPort = 0;
-        try{
-            intPort = Number.parseInt(port);
-        }catch{}
-        
-        if(!host)
-            throw new InvalidOperationException(`DB_HOST enviroment variable was no value`);
-
-        if(!port || Number.isNaN(intPort))
-            throw new InvalidOperationException(`DB_PORT enviroment variable was no value`);
-
-        if(!username)
-            throw new InvalidOperationException(`DB_USER enviroment variable was no value`);
-
-        if(!password)
-            throw new InvalidOperationException(`DB_PASS enviroment variable was no value`);
-            
-        if(!database)
-            throw new InvalidOperationException(`DB_NAME enviroment variable was no value`);
-
-        return PGDBManager.Build(host, intPort, database, username, password)
-    }
     
-    private CreatePromisse<T>(func : ()=> Promise<T>) : Promise<T>
-    {
-        return new Promise<T>(async (resolve, reject)=>{
-
-            let success = true;
-            let result : any;
-            try
-            {                
-                result = await func();
-            }
-            catch(err)
-            {
-                success = false;
-                result = err;
-            }
-            finally
-            {
-                await this._connection.CloseAsync();
-                
-                if(success)
-                    resolve(result);
-                else
-                    reject(result);
-            }
-        });
-    }
 
     /**
      * @private

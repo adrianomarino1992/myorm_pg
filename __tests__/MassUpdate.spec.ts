@@ -1,4 +1,5 @@
 
+import 'reflect-metadata';
 import { Operation } from 'myorm_core';
 import {CompleteSeedAsync, TruncateTablesAsync} from './functions/TestFunctions';
 
@@ -22,7 +23,9 @@ describe("Mass operations", ()=>{
        
         let context = await CompleteSeedAsync();
 
-        await context.Persons.Set("Age", 30).Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).UpdateSelectionAsync();
+        const count = await context.Persons.Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).CountAsync();
+
+        const rowsAffecteds = await context.Persons.Set("Age", 30).Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).UpdateSelectionAsync();
         
         let all = await context.Persons.ToListAsync();
         
@@ -36,7 +39,8 @@ describe("Mass operations", ()=>{
             }
         }  
         
-        expect(all.length).not.toBe(withA.length);       
+        expect(all.length).not.toBe(withA.length); 
+        expect(count).toBe(rowsAffecteds);      
         
     }, 500000);     
     
@@ -46,7 +50,7 @@ describe("Mass operations", ()=>{
 
         let person = await context.Persons.FirstOrDefaultAsync();
 
-        await context.Messages.Set('From', person).UpdateSelectionAsync();
+        let rowsAffecteds = await context.Messages.Set('From', person).UpdateSelectionAsync();
 
         person = await context.Persons
                                 .Where({Field : "Id", Value : person?.Id!})
@@ -62,6 +66,7 @@ describe("Mass operations", ()=>{
             expect(person?.MessagesWriten!.filter(s => s.Id == c.Id).length! > 0).toBeTruthy();
         }         
                       
+        expect(await context.Messages.CountAsync()).toBe(rowsAffecteds);
         
     }, 500000);  
 
@@ -74,7 +79,7 @@ describe("Mass operations", ()=>{
                                   .Load("MessagesReceived")
                                   .FirstOrDefaultAsync();
 
-        await context.Messages.Set('To', [person!]).UpdateSelectionAsync();
+        let rowsAffecteds = await context.Messages.Set('To', [person!]).UpdateSelectionAsync();
 
         person = await context.Persons
                                 .Where({Field : "Id", Value : person?.Id!})
@@ -91,6 +96,7 @@ describe("Mass operations", ()=>{
             expect(person?.MessagesReceived!.filter(s => s.Id == c.Id).length! > 0).toBeTruthy();
         }         
                       
+        expect(await context.Messages.CountAsync()).toBe(rowsAffecteds);
         
     }, 500000);  
 
@@ -100,14 +106,18 @@ describe("Mass operations", ()=>{
 
         test("Deleting some lines of table", async ()=>{
             
-            let context = await CompleteSeedAsync();            
-
-            await context.Persons.Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).DeleteSelectionAsync();
+            let context = await CompleteSeedAsync();   
             
+            const count = await context.Persons.Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).CountAsync();
+
+            const rowsAffecteds = await context.Persons.Set("Age", 30).Where({Field : "Name", Kind : Operation.STARTWITH, Value : "a"}).DeleteSelectionAsync();
+
             let all = await context.Persons.ToListAsync();
                         
             expect(all.length).toBe(2);     
             expect(all.filter(s => s.Name.indexOf("a") == 0).length).toBe(0)  
+
+            expect(count).toBe(rowsAffecteds);
             
         },500000);  
     });

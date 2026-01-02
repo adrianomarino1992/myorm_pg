@@ -9,16 +9,16 @@ export class Message extends Entity
     @Column()
     public Message : string;
 
-    @Column()
+    
     @ManyToOne(()=> Person, "MessagesWriten")
     public From? : Person;
 
 
-    @Column()
+    
     @OneToOne(()=> Person, "Message")
     public User? : Person;
 
-    @Column()  
+   
     @ManyToMany(()=> Person, "MessagesReceived")  
     public To? : Person[];     
 
@@ -26,7 +26,7 @@ export class Message extends Entity
     @Column() 
     public LinkTestValueInMessage? : number;
 
-    @Column() 
+   
     @DataType(DBTypes.INTEGERARRAY)
     public LinkTestArrayInMessage? : number[];
 

@@ -22,8 +22,10 @@
   "homepage": "https://github.com/adrianomarino1992/myorm_pg#readme",
   "license": "ISC",
   "dependencies": {
-    "myorm_core": "^8.3.0",
-    "pg": "^8.10.0",
+    "myorm_core": "^9.1.0",
+    "pg": "^8.10.0"
+  },
+  "peerDependencies": {
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
@@ -31,6 +33,7 @@
     "@types/pg": "^8.6.6",
     "@types/reflect-metadata": "^0.1.0",
     "jest": "^29.5.0",
+    "reflect-metadata": "^0.1.13",
     "ts-jest": "^29.1.0"
   }
 }

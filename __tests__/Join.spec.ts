@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
 import { CompleteSeedAsync } from './functions/TestFunctions';

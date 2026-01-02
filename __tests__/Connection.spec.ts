@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import { PGDBManager } from "../src/Index";
 import InvalidOperationException from "../src/core/exceptions/InvalidOperationException";
 import PGConnection from "../src/implementations/PGDBConnection";
@@ -7,7 +8,7 @@ describe("Connection", () => {
 
     test("Should open and close a connection", async () => {
 
-        var conn = new PGConnection("localhost", 5432, "db", "user", "password");
+        var conn = new PGConnection("localhost", 5432, "test_db", "user", "password");
 
         expect(conn).not.toBe(null);
 
@@ -23,7 +24,7 @@ describe("Connection", () => {
         process.env.DB_PORT = "5432";
         process.env.DB_USER = "user";
         process.env.DB_PASS = "password";
-        process.env.DB_NAME = "db";
+        process.env.DB_NAME = "test_db";
 
         let context = new Context(PGDBManager.BuildFromEnviroment());
 

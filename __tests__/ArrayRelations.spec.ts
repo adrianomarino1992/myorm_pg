@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { CreateContext, TruncateTablesAsync } from './functions/TestFunctions';
 import { Message } from './classes/RelationEntity';
