@@ -1,6 +1,6 @@
 {
   "name": "myorm_pg",
-  "version": "10.0.0",
+  "version": "10.0.1",
   "description": "A ORM writen in typescript for postgres",
   "main": "./lib/Index.js",
   "types": "./lib/Index.d.ts",
