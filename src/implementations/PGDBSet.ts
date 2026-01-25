@@ -742,12 +742,12 @@ export default class PGDBSet<T extends Object>  extends AbstractSet<T>
             if(visiteds.indexOf(obj) > -1)
                 return obj;            
 
-            if(!this.IsCorrectType(obj))
-                throw new InvalidOperationException(`The object passed as argument is not a ${this._type.name} instance`);
-            
             if(!obj)
                 throw new InvalidOperationException(`Cannot update a null reference object of ${this._type.name}`);
 
+            if(!this.IsCorrectType(obj))
+                throw new InvalidOperationException(`The object passed as argument is not a ${this._type.name} instance`);       
+            
 
             let keys = Type.GetProperties(this._type).filter(p => SchemasDecorators.IsPrimaryKey(this._type, p));
             let wheres : IPGStatement[] = [];

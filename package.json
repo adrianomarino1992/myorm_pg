@@ -8,6 +8,33 @@
     "./lib",
     "README.md"
   ],
+  "exports": {
+    ".": {
+      "import": "./lib/Index.js",
+      "require": "./lib/Index.js",
+      "types": "./lib/Index.d.ts"
+    },
+    "./interfaces": {
+      "import": "./lib/interfaces/Index.js",
+      "require": "./lib/interfaces/Index.js",
+      "types": "./lib/interfaces/Index.d.ts"
+    },
+    "./abstractions": {
+      "import": "./lib/abstractions/Index.js",
+      "require": "./lib/abstractions/Index.js",
+      "types": "./lib/abstractions/Index.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "interfaces": [
+        "./lib/interfaces/Index.d.ts"
+      ],
+      "abstractions": [
+        "./lib/abstractions/Index.d.ts"
+      ]
+    }
+  },
   "readme": "README.md",
   "scripts": {
     "test": "npx jest --colors --runInBand"
