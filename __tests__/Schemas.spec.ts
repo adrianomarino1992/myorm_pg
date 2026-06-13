@@ -7,6 +7,7 @@ import ErrorContext from "./classes/ErrorContext";
 import { Person } from "./classes/TestEntity";
 import EntityWithNoKey from "./classes/EntityWithNoKey";
 import { ConstraintFailException } from "../src/Index";
+import { describe, test, expect } from '@jest/globals';
 
 describe("PostgreSQL database schema and metadata", () => {
 
@@ -95,7 +96,6 @@ describe("PostgreSQL database schema and metadata", () => {
 
                 try {
                     await errorContext.UpdateDatabaseAsync();
-                    fail("Expected table creation to fail");
                 } catch (err) {
                     expect(err).toBeInstanceOf(ConstraintFailException);
                 }

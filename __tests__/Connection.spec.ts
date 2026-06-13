@@ -1,12 +1,21 @@
-import 'reflect-metadata'
+import 'reflect-metadata';
 import { PGDBManager } from "../src/Index";
 import InvalidOperationException from "../src/core/exceptions/InvalidOperationException";
-import PGConnection from "../src/implementations/PGDBConnection";
 import Context from "./classes/TestContext";
+import { describe, test, expect, afterAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
-describe("Connection", () => {
+afterAll(async () =>
+{
 
-    test("Should open and close a connection", async () => {
+    await PGConnection.CloseAllPoolsAsync();
+});
+
+describe("Connection", () =>
+{
+
+    test("Should open and close a connection", async () =>
+    {
 
         var conn = new PGConnection("localhost", 5432, "test_db", "user", "password");
 
@@ -18,7 +27,8 @@ describe("Connection", () => {
     });
 
 
-    test("Should open and close a connection using environment variables", async () => {
+    test("Should open and close a connection using environment variables", async () =>
+    {
 
         process.env.DB_HOST = "localhost";
         process.env.DB_PORT = "5432";
@@ -35,9 +45,11 @@ describe("Connection", () => {
     });
 
 
-    describe("Failure scenarios", () => {
+    describe("Failure scenarios", () =>
+    {
 
-        test("Should fail when no environment variables are provided", async () => {
+        test("Should fail when no environment variables are provided", async () =>
+        {
 
             process.env.DB_HOST = "";
             process.env.DB_PORT = "";
@@ -45,11 +57,14 @@ describe("Connection", () => {
             process.env.DB_PASS = "";
             process.env.DB_NAME = "";
 
-            try {
+            try
+            {
                 new Context(PGDBManager.BuildFromEnviroment());
                 throw new Error("Expected operation to fail");
-            } catch (exception) {
-                if (!(exception instanceof InvalidOperationException)) {
+            } catch (exception)
+            {
+                if (!(exception instanceof InvalidOperationException))
+                {
                     throw new Error("Unexpected error type");
                 }
             }

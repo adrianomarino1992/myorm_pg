@@ -3,7 +3,14 @@ import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
 import { TryAsync , TruncateTablesAsync, CreateContext } from './functions/TestFunctions';
 import { Message } from './classes/RelationEntity';
+import { describe, test, expect, afterAll, beforeAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
+
+afterAll(async ()=> {
+
+    await PGConnection.CloseAllPoolsAsync();
+})
 
 
 beforeAll(async ()=> await TruncateTablesAsync());

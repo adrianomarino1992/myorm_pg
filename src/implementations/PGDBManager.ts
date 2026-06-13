@@ -22,41 +22,95 @@ export default class PGDBManager extends AbstractManager
         this._connection = connection;
     }
 
-    public static Build(host : string, port : number, dababase : string, user : string, pass : string) : PGDBManager
+    public static Build(host: string, port: number, database: string,user: string, pass: string, usePool: boolean = true, min: number = 2, max: number = 10) : PGDBManager
     {
-        return new PGDBManager(new PGDBConnection(host, port, dababase, user, pass));
+        if(!host?.trim())
+            throw new InvalidOperationException("Host cannot be null or empty.");
+
+        if(port <= 0)
+            throw new InvalidOperationException("Port must be greater than zero.");
+
+        if(!database?.trim())
+            throw new InvalidOperationException("Database cannot be null or empty.");
+
+        if(!user?.trim())
+            throw new InvalidOperationException("User cannot be null or empty.");
+
+        if(!pass?.trim())
+            throw new InvalidOperationException("Password cannot be null or empty.");
+
+        if(min < 0)
+            throw new InvalidOperationException("Minimum pool size cannot be negative.");
+
+        if(max <= 0)
+            throw new InvalidOperationException("Maximum pool size must be greater than zero.");
+
+        if(min > max)
+            throw new InvalidOperationException("Minimum pool size cannot be greater than maximum pool size.");
+
+        return new PGDBManager(new PGDBConnection(host, port, database, user, pass, usePool, min, max));
     }
 
-    public static BuildFromEnviroment()
+    public static BuildFromEnviroment(): PGDBManager
     {
-        let host = process.env.DB_HOST || "";
-        let port = process.env.DB_PORT || "0";
-        let username = process.env.DB_USER || "";
-        let password = process.env.DB_PASS || "";
-        let database = process.env.DB_NAME || "";
-        let intPort = 0;
-        try{
-            intPort = Number.parseInt(port);
-        }catch{}
-        
-        if(!host)
-            throw new InvalidOperationException(`DB_HOST enviroment variable was no value`);
+        const host = process.env.DB_HOST ?? "";
+        const port = process.env.DB_PORT ?? "";
+        const user = process.env.DB_USER ?? "";
+        const pass = process.env.DB_PASS ?? "";
+        const database = process.env.DB_NAME ?? "";
 
-        if(!port || Number.isNaN(intPort))
-            throw new InvalidOperationException(`DB_PORT enviroment variable was no value`);
+        const intPort = Number.parseInt(port, 10);
 
-        if(!username)
-            throw new InvalidOperationException(`DB_USER enviroment variable was no value`);
+        if(Number.isNaN(intPort))
+            throw new InvalidOperationException(
+                "DB_PORT environment variable is not a valid integer."
+            );
 
-        if(!password)
-            throw new InvalidOperationException(`DB_PASS enviroment variable was no value`);
-            
-        if(!database)
-            throw new InvalidOperationException(`DB_NAME enviroment variable was no value`);
+        let usePool: boolean | undefined;
+        let minPool: number | undefined;
+        let maxPool: number | undefined;
 
-        return PGDBManager.Build(host, intPort, database, username, password)
+        if(process.env.DB_USE_POOL)
+        {
+            const value = process.env.DB_USE_POOL.trim().toLowerCase();
+
+            if(value != "true" && value != "false")
+                throw new InvalidOperationException(
+                    "DB_USE_POOL environment variable must be 'true' or 'false'."
+                );
+
+            usePool = value == "true";
+        }
+
+        if(process.env.DB_MIN_POOL_SIZE)
+        {
+            minPool = Number.parseInt(process.env.DB_MIN_POOL_SIZE, 10);
+
+            if(Number.isNaN(minPool))
+                throw new InvalidOperationException(
+                    "DB_MIN_POOL_SIZE environment variable is not a valid integer."
+                );
+        }
+
+        if(process.env.DB_MAX_POOL_SIZE)
+        {
+            maxPool = Number.parseInt(process.env.DB_MAX_POOL_SIZE, 10);
+
+            if(Number.isNaN(maxPool))
+                throw new InvalidOperationException(
+                    "DB_MAX_POOL_SIZE environment variable is not a valid integer."
+                );
+        }
+
+        return PGDBManager.Build(host, intPort, database, user, pass, usePool, minPool,maxPool);
     }
     
+    public static async CloseAllPoolAsync() : Promise<void>
+    {
+        await PGDBConnection.CloseAllPoolsAsync();
+    }
+        
+
     private CreatePromisse<T>(func : ()=> Promise<T>) : Promise<T>
     {
         return new Promise<T>(async (resolve, reject)=>{

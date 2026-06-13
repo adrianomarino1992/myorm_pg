@@ -9,7 +9,7 @@ import TypeNotMappedException from "../core/exceptions/TypeNotMappedException";
 import PGDBManager from "./PGDBManager";
 import PGDBSet from "./PGDBSet";
 import PGSetHelper from "./PGSetHelper";
-import { DBTypes } from "../Index";
+import { DBTypes, PGDBConnection } from "../Index";
 import { IJoining } from "myorm_core/lib/objects/interfaces/IDBContext";
 import {DBOperationLogHandler, LogType} from 'myorm_core'; 
 
@@ -27,6 +27,11 @@ export default abstract class PGDBContext extends AbstractContext
         this._manager = manager;  
     }      
     
+
+    public static async CloseAllPoolAsync() : Promise<void>
+    {
+        await PGDBConnection.CloseAllPoolsAsync();
+    }
     
     public SetLogger(logger: DBOperationLogHandler): void {
         this._manager.SetLogger(logger);

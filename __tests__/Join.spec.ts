@@ -3,10 +3,19 @@ import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
 import { CompleteSeedAsync } from './functions/TestFunctions';
 import { Message } from './classes/RelationEntity';
+import { describe, test, expect, afterAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
-describe('Context query and join operations', () => {
+afterAll(async () =>
+{
 
-    test('Inner join where the right side is an array related to the left side', async () => {
+    await PGConnection.CloseAllPoolsAsync();
+});
+describe('Context query and join operations', () =>
+{
+
+    test('Inner join where the right side is an array related to the left side', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -28,7 +37,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Query using array containment with the conventional query syntax', async () => {
+    test('Query using array containment with the conventional query syntax', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -51,7 +61,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Query using direct object reference with the conventional syntax', async () => {
+    test('Query using direct object reference with the conventional syntax', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -74,7 +85,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Inner join where the right side is an array and the left side has a related scalar field', async () => {
+    test('Inner join where the right side is an array and the left side has a related scalar field', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -101,7 +113,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Inner join where the left side is an array and the right side is a scalar field', async () => {
+    test('Inner join where the left side is an array and the right side is a scalar field', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -123,7 +136,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Inner join using unrelated scalar fields on both sides', async () => {
+    test('Inner join using unrelated scalar fields on both sides', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -145,7 +159,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Inner join where the left side is an array with no direct relation to the right side', async () => {
+    test('Inner join where the left side is an array with no direct relation to the right side', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -169,7 +184,8 @@ describe('Context query and join operations', () => {
 
     }, 5 ^ 100000);
 
-    test('Inner join where the right side is an array with no direct relation to the left side', async () => {
+    test('Inner join where the right side is an array with no direct relation to the left side', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -185,7 +201,8 @@ describe('Context query and join operations', () => {
 
     }, 100000);
 
-    test('Ordering results in descending order', async () => {
+    test('Ordering results in descending order', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -204,7 +221,8 @@ describe('Context query and join operations', () => {
 
     }, 100000);
 
-    test('Limiting the number of returned records using take', async () => {
+    test('Limiting the number of returned records using take', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -222,7 +240,8 @@ describe('Context query and join operations', () => {
 
     }, 100000);
 
-    test('Limiting the number of returned records using limit', async () => {
+    test('Limiting the number of returned records using limit', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -241,7 +260,8 @@ describe('Context query and join operations', () => {
 
     }, 100000);
 
-    test('Skipping records using offset', async () => {
+    test('Skipping records using offset', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 
@@ -261,7 +281,8 @@ describe('Context query and join operations', () => {
 
     }, 100000);
 
-    test('Counting records after applying filters and joins', async () => {
+    test('Counting records after applying filters and joins', async () =>
+    {
 
         let context = await CompleteSeedAsync();
 

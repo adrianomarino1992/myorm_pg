@@ -1,20 +1,33 @@
 import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
-import {
+import
+{
     TruncatePersonTableAsync,
     CreateContext,
     SeedAsync
 } from './functions/TestFunctions';
 import Type from '../src/core/design/Type';
+import { describe, test, expect, afterAll, beforeAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
-beforeAll(async () => {
+afterAll(async () =>
+{
+
+    await PGConnection.CloseAllPoolsAsync();
+});
+
+
+beforeAll(async () =>
+{
     await TruncatePersonTableAsync();
 });
 
-describe('Query', () => {
+describe('Query', () =>
+{
 
-    test('Should select an entity from a real database', async () => {
+    test('Should select an entity from a real database', async () =>
+    {
 
         const context = await SeedAsync();
 
@@ -39,7 +52,8 @@ describe('Query', () => {
         expect(adrianos.length).toBe(3);
         expect(fAdrianos.length).toBe(3);
 
-        for (let i = 0; i < adrianos.length; i++) {
+        for (let i = 0; i < adrianos.length; i++)
+        {
             expect(adrianos[i].Name).toBe(fAdrianos[i].Name);
             expect(adrianos[i].Age).toBe(fAdrianos[i].Age);
             expect(adrianos[i].Email).toBe(fAdrianos[i].Email);
@@ -62,9 +76,11 @@ describe('Query', () => {
         await TruncatePersonTableAsync();
     });
 
-    describe('Query with range operator', () => {
+    describe('Query with range operator', () =>
+    {
 
-        test('Should select entities using a range of values', async () => {
+        test('Should select entities using a range of values', async () =>
+        {
 
             const context = await CreateContext();
 
@@ -92,7 +108,8 @@ describe('Query', () => {
             expect(adrianos.length).toBe(3);
             expect(fAdrianos.length).toBe(3);
 
-            for (let i = 0; i < adrianos.length; i++) {
+            for (let i = 0; i < adrianos.length; i++)
+            {
                 expect(adrianos[i].Name).toBe(fAdrianos[i].Name);
                 expect(adrianos[i].Age).toBe(fAdrianos[i].Age);
                 expect(adrianos[i].Email).toBe(fAdrianos[i].Email);
@@ -101,9 +118,11 @@ describe('Query', () => {
             await TruncatePersonTableAsync();
         });
 
-        describe('Free string query', () => {
+        describe('Free string query', () =>
+        {
 
-            test('Should select entities using a free string query', async () => {
+            test('Should select entities using a free string query', async () =>
+            {
 
                 const context = await CreateContext();
 
@@ -123,16 +142,19 @@ describe('Query', () => {
 
                 expect(adrianos.length).toBe(4);
 
-                for (const a of adrianos) {
+                for (const a of adrianos)
+                {
                     expect(a.Age).toBeGreaterThan(30);
                 }
 
                 await TruncatePersonTableAsync();
             });
 
-            describe('Testing queries with arrays', () => {
+            describe('Testing queries with arrays', () =>
+            {
 
-                test('Should select items inside an array', async () => {
+                test('Should select items inside an array', async () =>
+                {
 
                     const context = await CreateContext();
 
@@ -163,7 +185,8 @@ describe('Query', () => {
 
                     expect(persons.length).toBe(2);
 
-                    for (const a of persons) {
+                    for (const a of persons)
+                    {
                         expect(a.Documents).toContain(7);
                     }
 
@@ -174,7 +197,8 @@ describe('Query', () => {
 
                     expect(persons.length).toBe(2);
 
-                    for (const a of persons) {
+                    for (const a of persons)
+                    {
                         expect(a.Name.toLowerCase()).toContain('');
                     }
 

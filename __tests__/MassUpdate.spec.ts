@@ -2,7 +2,14 @@
 import 'reflect-metadata';
 import { Operation } from 'myorm_core';
 import {CompleteSeedAsync, TruncateTablesAsync} from './functions/TestFunctions';
+import { describe, test, expect, afterAll, beforeAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
+
+afterAll(async ()=> {
+
+    await PGConnection.CloseAllPoolsAsync();
+})
 
 describe("Mass operations", ()=>{    
 

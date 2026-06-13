@@ -4,8 +4,14 @@ import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
 import {TruncatePersonTableAsync, CreateContext, SeedAsync, CompleteSeedAsync} from './functions/TestFunctions';
 import TypeNotMappedException from '../src/core/exceptions/TypeNotMappedException';
+import { describe, test, expect, afterAll, beforeAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
 
+afterAll(async ()=> {
+
+    await PGConnection.CloseAllPoolsAsync();
+})
 
 beforeAll(async()=>{
     await TruncatePersonTableAsync();

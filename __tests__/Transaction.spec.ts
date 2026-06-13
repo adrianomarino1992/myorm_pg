@@ -1,37 +1,46 @@
 import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { Operation } from 'myorm_core';
-import {TruncatePersonTableAsync, CreateContext, SeedAsync, CompleteSeedAsync, TruncateTablesAsync} from './functions/TestFunctions';
+import { TruncatePersonTableAsync, CreateContext, SeedAsync, CompleteSeedAsync, TruncateTablesAsync } from './functions/TestFunctions';
 import TypeNotMappedException from '../src/core/exceptions/TypeNotMappedException';
 import { Message } from './classes/RelationEntity';
+import { describe, test, expect, afterAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
+
+afterAll(async () =>
+{
+
+    await PGConnection.CloseAllPoolsAsync();
+});
 
 
 
+describe("Transactions", () =>
+{
 
-describe("Transactions", () => {
+    test("Should save all entities", async () =>
+    {
 
-    test("Should save all entities", async () => {
+        await TruncateTablesAsync();
+        const context = CreateContext();
 
-         await TruncateTablesAsync();
-         const context = CreateContext();
+        const person1 = new Person("Adriano", "adriano@test.com");
+        const person2 = new Person("Camila", "camila@test.com");
+        const person3 = new Person("Juliana", "juliana@test.com");
+        const person4 = new Person("Andre", "andre@test.com");
 
-         const person1 = new Person("Adriano", "adriano@test.com");
-         const person2 = new Person("Camila", "camila@test.com");
-         const person3 = new Person("Juliana", "juliana@test.com");
-         const person4 = new Person("Andre", "andre@test.com");
-        
-         const msg = new Message("some message", person1, [person2, person3, person4]);
+        const msg = new Message("some message", person1, [person2, person3, person4]);
 
 
-         await context.BeginTransactionAsync();
+        await context.BeginTransactionAsync();
 
-         await context.Persons.AddAsync(person1);
-         await context.Persons.AddAsync(person2);
-         await context.Persons.AddAsync(person3);
-         await context.Persons.AddAsync(person4);
-         await context.Messages.AddAsync(msg);
+        await context.Persons.AddAsync(person1);
+        await context.Persons.AddAsync(person2);
+        await context.Persons.AddAsync(person3);
+        await context.Persons.AddAsync(person4);
+        await context.Messages.AddAsync(msg);
 
-         await context.CommitAsync();
+        await context.CommitAsync();
 
 
         let personsCount = await context.Persons.CountAsync();
@@ -41,36 +50,37 @@ describe("Transactions", () => {
         expect(personsCount).toBe(4);
         expect(mgsCount).toBe(1);
 
-    }, 100000 );
+    }, 100000);
 
 
-    test("Should save all persons only", async () => {
+    test("Should save all persons only", async () =>
+    {
 
-         await TruncateTablesAsync();
-         const context = CreateContext();
+        await TruncateTablesAsync();
+        const context = CreateContext();
 
-         const person1 = new Person("Adriano", "adriano@test.com");
-         const person2 = new Person("Camila", "camila@test.com");
-         const person3 = new Person("Juliana", "juliana@test.com");
-         const person4 = new Person("Andre", "andre@test.com");
-        
-         const msg = new Message("some message", person1, [person2, person3, person4]);
+        const person1 = new Person("Adriano", "adriano@test.com");
+        const person2 = new Person("Camila", "camila@test.com");
+        const person3 = new Person("Juliana", "juliana@test.com");
+        const person4 = new Person("Andre", "andre@test.com");
+
+        const msg = new Message("some message", person1, [person2, person3, person4]);
 
 
-         await context.BeginTransactionAsync();
+        await context.BeginTransactionAsync();
 
-         await context.Persons.AddAsync(person1);
-         await context.Persons.AddAsync(person2);
-         await context.Persons.AddAsync(person3);
-         await context.Persons.AddAsync(person4);
+        await context.Persons.AddAsync(person1);
+        await context.Persons.AddAsync(person2);
+        await context.Persons.AddAsync(person3);
+        await context.Persons.AddAsync(person4);
 
-         await context.SavePointAsync("persons");
+        await context.SavePointAsync("persons");
 
-         await context.Messages.AddAsync(msg);
+        await context.Messages.AddAsync(msg);
 
-         await context.RollBackAsync("persons");
+        await context.RollBackAsync("persons");
 
-         await context.CommitAsync();
+        await context.CommitAsync();
 
 
         let personsCount = await context.Persons.CountAsync();
@@ -80,36 +90,37 @@ describe("Transactions", () => {
         expect(personsCount).toBe(4);
         expect(mgsCount).toBe(0);
 
-    }, 100000 );
-    
-
-    test("Should rollback all transaction", async () => {
-
-         await TruncateTablesAsync();
-         const context = CreateContext();
-
-         const person1 = new Person("Adriano", "adriano@test.com");
-         const person2 = new Person("Camila", "camila@test.com");
-         const person3 = new Person("Juliana", "juliana@test.com");
-         const person4 = new Person("Andre", "andre@test.com");
-        
-         const msg = new Message("some message", person1, [person2, person3, person4]);
+    }, 100000);
 
 
-         await context.BeginTransactionAsync();
+    test("Should rollback all transaction", async () =>
+    {
 
-         await context.Persons.AddAsync(person1);
-         await context.Persons.AddAsync(person2);
-         await context.Persons.AddAsync(person3);
-         await context.Persons.AddAsync(person4);
+        await TruncateTablesAsync();
+        const context = CreateContext();
 
-         await context.SavePointAsync("persons");
+        const person1 = new Person("Adriano", "adriano@test.com");
+        const person2 = new Person("Camila", "camila@test.com");
+        const person3 = new Person("Juliana", "juliana@test.com");
+        const person4 = new Person("Andre", "andre@test.com");
 
-         await context.Messages.AddAsync(msg);
+        const msg = new Message("some message", person1, [person2, person3, person4]);
 
-         await context.RollBackAsync("persons");
 
-         await context.RollBackAsync();
+        await context.BeginTransactionAsync();
+
+        await context.Persons.AddAsync(person1);
+        await context.Persons.AddAsync(person2);
+        await context.Persons.AddAsync(person3);
+        await context.Persons.AddAsync(person4);
+
+        await context.SavePointAsync("persons");
+
+        await context.Messages.AddAsync(msg);
+
+        await context.RollBackAsync("persons");
+
+        await context.RollBackAsync();
 
 
         let personsCount = await context.Persons.CountAsync();
@@ -119,7 +130,7 @@ describe("Transactions", () => {
         expect(personsCount).toBe(0);
         expect(mgsCount).toBe(0);
 
-    }, 100000 );
+    }, 100000);
 
 
-});5
+}); 5;
