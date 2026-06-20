@@ -1,4 +1,4 @@
-import 'reflect-metadata'
+import 'reflect-metadata';
 import { TryAsync, CreateConnection } from "./functions/TestFunctions";
 import Type from "../src/core/design/Type";
 import PGDBManager from "../src/implementations/PGDBManager";
@@ -7,17 +7,27 @@ import ErrorContext from "./classes/ErrorContext";
 import { Person } from "./classes/TestEntity";
 import EntityWithNoKey from "./classes/EntityWithNoKey";
 import { ConstraintFailException } from "../src/Index";
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, afterAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
-describe("PostgreSQL database schema and metadata", () => {
+afterAll(async () =>
+{
 
-    const createManager = () => {
+    await PGConnection.CloseAllPoolsAsync();
+});
+
+describe("PostgreSQL database schema and metadata", () =>
+{
+
+    const createManager = () =>
+    {
         const connection = CreateConnection();
         const manager = new PGDBManager(connection);
         return { connection, manager };
     };
 
-    test("should verify whether databases exist", async () => {
+    test("should verify whether databases exist", async () =>
+    {
 
         const { manager } = createManager();
 
@@ -31,13 +41,15 @@ describe("PostgreSQL database schema and metadata", () => {
 
     test(
         "should create a database when it does not exist",
-        async () => {
+        async () =>
+        {
 
             const { connection, manager } = createManager();
 
             let exists = await manager.CheckDatabaseAsync("test_db");
 
-            if (exists) {
+            if (exists)
+            {
                 await connection.AsPostgres().OpenAsync();
                 await connection.ExecuteNonQueryAsync(
                     `select pg_terminate_backend(pid) 
@@ -60,17 +72,20 @@ describe("PostgreSQL database schema and metadata", () => {
         100_000
     );
 
-    describe("Tables (schemas)", () => {
+    describe("Tables (schemas)", () =>
+    {
 
         test(
             "should create a table and confirm it exists",
-            async () => {
+            async () =>
+            {
 
                 const { connection, manager } = createManager();
 
                 let exists = await manager.CheckTableAsync(Person);
 
-                if (exists) {
+                if (exists)
+                {
                     await connection.OpenAsync();
                     await connection.ExecuteNonQueryAsync(
                         "drop table person_tb;"
@@ -89,14 +104,17 @@ describe("PostgreSQL database schema and metadata", () => {
 
         test(
             "should throw an error when creating a table without a primary key",
-            async () => {
+            async () =>
+            {
 
                 const { manager } = createManager();
                 const errorContext = new ErrorContext(manager);
 
-                try {
+                try
+                {
                     await errorContext.UpdateDatabaseAsync();
-                } catch (err) {
+                } catch (err)
+                {
                     expect(err).toBeInstanceOf(ConstraintFailException);
                 }
 
@@ -106,17 +124,20 @@ describe("PostgreSQL database schema and metadata", () => {
             }
         );
 
-        describe("Columns", () => {
+        describe("Columns", () =>
+        {
 
             test(
                 "should create a column and verify it exists",
-                async () => {
+                async () =>
+                {
 
                     const { connection, manager } = createManager();
 
                     let exists = await manager.CheckColumnAsync(Person, "Name");
 
-                    if (exists) {
+                    if (exists)
+                    {
                         await connection.OpenAsync();
                         await connection.ExecuteNonQueryAsync(
                             "alter table person_tb drop column name;"
@@ -135,13 +156,15 @@ describe("PostgreSQL database schema and metadata", () => {
 
             test(
                 "should create and then drop a column",
-                async () => {
+                async () =>
+                {
 
                     const { connection, manager } = createManager();
 
                     let exists = await manager.CheckColumnAsync(Person, "Name");
 
-                    if (exists) {
+                    if (exists)
+                    {
                         await connection.OpenAsync();
                         await connection.ExecuteNonQueryAsync(
                             "alter table person_tb drop column name;"
@@ -166,25 +189,31 @@ describe("PostgreSQL database schema and metadata", () => {
 
         });
 
-        describe("Schema synchronization using context", () => {
+        describe("Schema synchronization using context", () =>
+        {
 
             test(
                 "should create all tables and columns defined in the context",
-                async () => {
+                async () =>
+                {
 
                     await TryAsync(
-                        async () => {
+                        async () =>
+                        {
 
                             const { connection, manager } = createManager();
 
-                            manager.SetLogger((message) => {
+                            manager.SetLogger((message) =>
+                            {
                                 console.log(message);
                             });
 
                             const context = new Context(manager);
 
-                            for (const type of context.GetMappedTypes()) {
-                                if (await manager.CheckTableAsync(type)) {
+                            for (const type of context.GetMappedTypes())
+                            {
+                                if (await manager.CheckTableAsync(type))
+                                {
                                     await connection.OpenAsync();
                                     await connection.ExecuteNonQueryAsync(
                                         `drop table ${Type.GetTableName(type)};`
@@ -195,12 +224,14 @@ describe("PostgreSQL database schema and metadata", () => {
 
                             await context.UpdateDatabaseAsync();
 
-                            for (const type of context.GetMappedTypes()) {
+                            for (const type of context.GetMappedTypes())
+                            {
                                 expect(
                                     await manager.CheckTableAsync(type)
                                 ).toBeTruthy();
 
-                                for (const column of Type.GetColumnNameAndType(type)) {
+                                for (const column of Type.GetColumnNameAndType(type))
+                                {
                                     expect(
                                         await manager.CheckColumnAsync(
                                             type,
@@ -211,7 +242,8 @@ describe("PostgreSQL database schema and metadata", () => {
                             }
 
                         },
-                        err => {
+                        err =>
+                        {
                             throw err;
                         }
                     );
@@ -222,13 +254,15 @@ describe("PostgreSQL database schema and metadata", () => {
 
             test(
                 "should validate the column type",
-                async () => {
+                async () =>
+                {
 
                     const { connection, manager } = createManager();
 
                     let exists = await manager.CheckColumnAsync(Person, "Name");
 
-                    if (exists) {
+                    if (exists)
+                    {
                         await connection.OpenAsync();
                         await connection.ExecuteNonQueryAsync(
                             "alter table person_tb drop column name;"
@@ -250,13 +284,15 @@ describe("PostgreSQL database schema and metadata", () => {
 
             test(
                 "should change a column type when it differs from the model",
-                async () => {
+                async () =>
+                {
 
                     const { connection, manager } = createManager();
 
                     let exists = await manager.CheckColumnAsync(Person, "CEP");
 
-                    if (exists) {
+                    if (exists)
+                    {
                         await connection.OpenAsync();
                         await connection.ExecuteNonQueryAsync(
                             "alter table person_tb drop column cep;"

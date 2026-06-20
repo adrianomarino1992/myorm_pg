@@ -2,14 +2,25 @@ import 'reflect-metadata';
 import { Person } from './classes/TestEntity';
 import { CreateContext, TruncateTablesAsync } from './functions/TestFunctions';
 import { Message } from './classes/RelationEntity';
+import { describe, test, expect, afterAll, beforeAll } from '@jest/globals';
+import PGConnection from "../src/implementations/PGDBConnection";
 
-beforeAll(async () => {
+afterAll(async () =>
+{
+
+    await PGConnection.CloseAllPoolsAsync();
+});
+
+beforeAll(async () =>
+{
     await TruncateTablesAsync();
 });
 
-describe("Context", () => {
+describe("Context", () =>
+{
 
-    test("Should remove an item from an array and update relations", async () => {
+    test("Should remove an item from an array and update relations", async () =>
+    {
 
         var context = CreateContext();
 
@@ -76,7 +87,8 @@ describe("Context", () => {
     }, 100000);
 
 
-    test("Should remove reference from related item", async () => {
+    test("Should remove reference from related item", async () =>
+    {
 
         var context = CreateContext();
 
@@ -148,7 +160,8 @@ describe("Context", () => {
     }, 100000);
 
 
-    test("Should remove reference between related objects", async () => {
+    test("Should remove reference between related objects", async () =>
+    {
 
         var context = CreateContext();
 
@@ -219,7 +232,8 @@ describe("Context", () => {
     }, 100000);
 
 
-    test("Should correctly search by empty and undefined arrays", async () => {
+    test("Should correctly search by empty and undefined arrays", async () =>
+    {
 
         var context = CreateContext();
 
